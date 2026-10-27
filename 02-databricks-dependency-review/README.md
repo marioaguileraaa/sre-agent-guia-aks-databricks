@@ -22,8 +22,58 @@ de tablas ni ficheros.
 
 ---
 
+## Ya tenéis el caso AKS desplegado: qué reutilizáis y qué es nuevo
+
+Este caso es **independiente** del de AKS: tiene **su propia herramienta Python, su propio skill
+y su propio subagente**. **No se toca nada del caso AKS** y no se mezclan: el subagente de AKS no
+verá Databricks ni al revés.
+
+Como ya desplegasteis AKS, **buena parte del trabajo ya está hecha**:
+
+| Ya lo tenéis del caso AKS | Cómo se usa aquí |
+|---|---|
+| **El SRE Agent** | El **mismo** agente. No hay que crear otro |
+| **La identidad del agente (Client ID)** | El **mismo** Client ID. Es el valor de `MANAGED_IDENTITY_CLIENT_ID` que pusisteis en el `.py` de AKS: copiadlo de ahí |
+| **Roles en el SRE Agent** (quien configura y quien usa) | Los **mismos**. Quien creó la herramienta de AKS puede crear esta; quien usa `@aks-waf-live` puede usar `@databricks-dependency-live` |
+| **PowerShell 7 + Azure CLI** | Igual. Mismo `az login --tenant <TENANT_ID>` |
+| **Saber crear herramienta, skill y subagente** en el Builder | **Mismas pantallas y mismo orden**. Solo cambian nombre, código, parámetros e instrucciones |
+| **Reader en Azure** | Si el script de AKS se ejecutó sobre el **Management Group** o la **suscripción** donde está el workspace de Databricks, la identidad **ya tiene Reader**. El script de Databricks lo detecta y lo deja como está (no duplica) |
+
+**Lo nuevo** (y lo que de verdad lleva tiempo):
+
+| # | Qué es nuevo | Quién lo hace | Dónde |
+|---|---|---|---|
+| 1 | Dar acceso a la identidad **dentro del workspace** de Databricks (service principal + `CAN_VIEW`) | **Workspace Admin** | [Paso 1](#paso-1--dar-permisos-a-la-identidad-del-agente) |
+| 2 | Dar acceso de **solo metadatos** en **Unity Catalog** | **Metastore Admin** u **owner** del catálogo | [Paso 1](#paso-1--dar-permisos-a-la-identidad-del-agente) |
+| 3 | Configurar **otro `.py`** (el de Databricks, no el de AKS) | Quien configura el agente | [Paso 2](#paso-2--configurar-el-py) |
+| 4 | Crear una **herramienta nueva** `generate-databricks-dependency-report` | Quien configura el agente | [Paso 3](#paso-3--crear-la-herramienta-python) |
+| 5 | Probarla en el **Test playground** | Quien configura el agente | [Paso 4](#-paso-4--test-playground-qué-valores-poner-en-cada-parámetro) |
+| 6 | Crear un **skill nuevo** `databricks-dependency-live` | Quien configura el agente | [Paso 5](#paso-5--crear-el-skill) |
+| 7 | Crear un **subagente nuevo** `databricks-dependency-live` | Quien configura el agente | [Paso 6](#paso-6--crear-el-subagente) |
+
+> ⚠️ **Diferencias con AKS que suelen confundir**
+>
+> - **Es una herramienta NUEVA.** No editéis `generate-aks-waf-report`: usad **Create → Tool →
+>   Python tool** y cread `generate-databricks-dependency-report`.
+> - **Permisos en 3 sitios, no en 1.** En AKS bastaba con Azure. Aquí, además de Azure, hacen falta
+>   el **Workspace Admin** y el **administrador de Unity Catalog**. Ser Owner de la suscripción **no**
+>   da permisos dentro de Unity Catalog. Ver [⭐ Roles](#-roles-y-permisos-quién-necesita-qué-leer-antes-de-empezar).
+> - **El parámetro del nombre SÍ lleva lista de valores.** En AKS quitasteis el enum de
+>   `cluster_name`; aquí `workspace_name` **mantiene** el enum con los nombres de vuestros
+>   workspaces (más `""`).
+> - **Una suscripción por configuración:** el `.py` admite **hasta 5 workspaces de la misma
+>   suscripción** (`SUBSCRIPTION_ID`).
+> - **Solo lee metadatos:** nunca `SELECT`, nunca arranca clústeres, nunca lee datos.
+
+**Tiempo estimado:** unos **45 minutos** si las personas con los roles de Databricks y Unity
+Catalog están disponibles a la vez. Si no, el paso 1 se puede repartir (ver
+[«Si lo hacen varias personas»](#si-lo-hacen-varias-personas-a-mano)).
+
+---
+
 ## Índice
 
+- [Ya tenéis el caso AKS desplegado: qué reutilizáis y qué es nuevo](#ya-tenéis-el-caso-aks-desplegado-qué-reutilizáis-y-qué-es-nuevo)
 - [Antes de empezar: un solo tenant](#antes-de-empezar-un-solo-tenant)
 - [⭐ Roles y permisos: quién necesita qué (leer antes de empezar)](#-roles-y-permisos-quién-necesita-qué-leer-antes-de-empezar)
 - [Paso 1 · Dar permisos a la identidad del agente](#paso-1--dar-permisos-a-la-identidad-del-agente)

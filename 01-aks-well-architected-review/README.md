@@ -16,6 +16,12 @@ suscripciones del tenant**) y genera un informe con:
 
 No cambia nada: solo lee.
 
+> **¿Ya tenéis este caso desplegado (versión de una suscripción)?** No hay que empezar de cero.
+> Id directamente a **[A. QUÉ CAMBIAR (7 pasos)](#a-si-ya-lo-tenéis-desplegado-qué-cambiar-7-pasos)**,
+> leyendo antes [⭐ Roles](#-roles-y-permisos-quién-necesita-qué-leer-antes-de-empezar) (paso A1) y
+> terminando con el [⭐ Test playground](#-test-playground-qué-valores-poner-en-cada-parámetro).
+> La sección **B** es solo para quien lo instala por primera vez.
+
 ![Portada del informe](images/aks04-report-00-cover.png)
 
 ---

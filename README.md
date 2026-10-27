@@ -8,6 +8,15 @@ Esta guía explica, paso a paso y con capturas reales del portal, cómo desplega
 | 1 | **Revisión de arquitectura y configuración de AKS** (Well-Architected) | Informe HTML + JSON + 2 CSV por clúster o por lotes de clústeres, en **todas tus suscripciones** (hasta 500 clústeres) | [`01-aks-well-architected-review`](01-aks-well-architected-review/README.md) |
 | 2 | **Mapa de dependencias y revisión de Azure Databricks** | Informe HTML + JSON + 2 CSV del workspace: dependencias, seguridad, buenas prácticas y FinOps | [`02-databricks-dependency-review`](02-databricks-dependency-review/README.md) |
 
+**Las dos carpetas son independientes.** Cada caso tiene **su propia** herramienta Python, **su
+propio** skill y **su propio** subagente, y cada carpeta tiene **su propia guía completa**:
+
+- **[AKS](01-aks-well-architected-review/README.md):** si ya lo tenéis desplegado con una sola
+  suscripción, la guía empieza por lo único que tenéis que hacer: **[los 7 cambios](01-aks-well-architected-review/README.md#a-si-ya-lo-tenéis-desplegado-qué-cambiar-7-pasos)**.
+- **[Databricks](02-databricks-dependency-review/README.md):** caso **nuevo**. La guía da por hecho
+  que ya habéis desplegado AKS (mismo agente, misma identidad, mismas pantallas del Builder) y
+  explica **qué reutilizáis y qué es nuevo**: [ver aquí](02-databricks-dependency-review/README.md#ya-tenéis-el-caso-aks-desplegado-qué-reutilizáis-y-qué-es-nuevo).
+
 > **Antes de empezar:** si todavía no habéis desplegado el caso de **auditoría de credenciales
 > y certificados de Microsoft Entra ID**, es el más sencillo y sirve para familiarizarse con el
 > portal. Su guía paso a paso está aquí:
@@ -37,7 +46,7 @@ Esta guía explica, paso a paso y con capturas reales del portal, cómo desplega
 |---|---|---|---|
 | 1 | (Si no está hecho) desplegar el caso de **credenciales de Entra ID** | 30 min | [Caso 01](https://github.com/marioaguileraaa/sre-agent-use-cases/tree/main/01-entra-credential-expiration-audit) |
 | 1 | **AKS:** pasar a multi-suscripción (si ya lo tenéis, son **7 cambios**) | 45–60 min | [AKS → «Si ya lo tenéis desplegado»](01-aks-well-architected-review/README.md#a-si-ya-lo-tenéis-desplegado-qué-cambiar-7-pasos) |
-| 2 | **Databricks:** desplegarlo y generar el primer informe | 45 min | [Databricks](02-databricks-dependency-review/README.md) |
+| 2 | **Databricks:** caso nuevo e independiente (reutiliza el agente y la identidad del AKS) | 45 min | [Databricks → «Qué reutilizáis y qué es nuevo»](02-databricks-dependency-review/README.md#ya-tenéis-el-caso-aks-desplegado-qué-reutilizáis-y-qué-es-nuevo) |
 | 2 | Revisar los informes y apuntar dudas para la siguiente sesión | — | — |
 
 ---
