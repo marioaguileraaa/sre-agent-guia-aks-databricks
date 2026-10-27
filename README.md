@@ -1,4 +1,14 @@
+<img src="images/gestamp-logo.png" alt="Gestamp" height="48">
+
 # Azure SRE Agent · Guía paso a paso: AKS (multi-suscripción) y Azure Databricks
+
+> **Repositorio temporal para Gestamp.** Se eliminará cuando terminen las pruebas.
+> Los `.py` ya llevan el nombre y el logo de Gestamp; solo tenéis que poner el **Client ID** de vuestro
+> SRE Agent (el mismo que ya usáis en la herramienta de AKS). Ya no hace falta ningún ZIP: todo está aquí.
+>
+> **Empezad por [`LEEME-PRIMERO.md`](LEEME-PRIMERO.md)**: es el resumen en una página (roles, los 7 cambios de
+> AKS, Databricks y los errores típicos). La carpeta [`00-sre-usecase-builder-v3`](00-sre-usecase-builder-v3/)
+> es opcional: sirve para crear casos nuevos.
 
 Esta guía explica, paso a paso y con capturas reales del portal, cómo desplegar en
 [Azure SRE Agent](https://sre.azure.com) dos casos de uso **de solo lectura**:

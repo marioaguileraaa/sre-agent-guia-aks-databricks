@@ -1,0 +1,71 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>Orphaned managed disks (not attached to any VM)</title><style>
+:root{--ink:#1b1f24;--muted:#5b6470;--line:#e3e6ea;--bg:#f6f7f9;--card:#fff;--accent:#0f6cbd;
+--critical:#a4262c;--high:#c4441c;--medium:#a86a00;--low:#2b6cb0;--info:#5b6470;--good:#1e7a46;--bad:#a4262c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:32px 28px 56px}
+header{border-bottom:3px solid var(--accent);padding-bottom:18px;margin-bottom:24px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:26px;line-height:1.2;margin:6px 0 10px}h2{font-size:17px;margin:34px 0 12px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-size:13px}
+.chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid currentColor}
+.verdict{display:flex;gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--v);padding:16px 18px;border-radius:8px}
+.verdict b{font-size:18px}.note{background:#fff8e6;border:1px solid #f0d58c;padding:10px 14px;border-radius:6px;margin-top:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.kpi .v{font-size:28px;font-weight:650;font-variant-numeric:tabular-nums}.kpi .l{color:var(--muted);font-size:13px}
+.d{font-size:12px;font-weight:600}.better{color:var(--good)}.worse{color:var(--bad)}.same,.changed,.n\/a{color:var(--muted)}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{background:#eef0f3;font-weight:600}
+tr:last-child td{border-bottom:0}td.num{text-align:right;font-variant-numeric:tabular-nums}
+.sev{font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.04em}
+.critical{color:var(--critical)}.high{color:var(--high)}.medium{color:var(--medium)}.low{color:var(--low)}.info{color:var(--info)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}.box h3{margin:0 0 6px;font-size:14px}
+.box ul{margin:0;padding-left:18px}.muted{color:var(--muted)}.wrap{overflow-x:auto}
+footer{margin-top:40px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:14px}
+@media print{body{background:#fff}main{padding:0}.kpi,.box,table{break-inside:avoid}}
+</style></head><body><main>
+<header><div class='eyebrow'>Azure SRE Agent</div><h1>Orphaned managed disks (not attached to any VM)</h1><div class='meta'>
+<span>Generated: 2026-10-26T11:37:47Z</span><span>Window: 7 days</span>
+<span class='chip' style='color:#a86a00'>SIMULATED DATA (self_test)</span>
+<span class='chip'>SIMULATED</span></div></header>
+<div class='verdict' style='--v:var(--high)'><b>Needs attention</b><span class='muted'>1 high, 3 medium, 3 low, 3 info</span></div>
+<h2>Key indicators</h2><div class='kpis'>
+<div class='kpi'><div class='v'>6</div><div class='l'>Orphaned disks</div><div class='d same'>= 0 · Before: 6</div></div>
+<div class='kpi'><div class='v'>3,481.60</div><div class='l'>Orphaned capacity (GB)</div><div class='d worse'>▲ 512 · Before: 2,969.60</div></div>
+<div class='kpi'><div class='v'>3</div><div class='l'>Premium/Ultra orphaned</div><div class='d better'>▼ 1 · Before: 4</div></div>
+<div class='kpi'><div class='v'>3</div><div class='l'>Unattached 30+ days</div><div class='d same'>= 0 · Before: 3</div></div>
+</div>
+<h2>Changes since the previous report</h2>
+<p class='muted'>Compared with the report from 2026-10-19T11:37:47Z.</p><div class='grid2'>
+<div class='box'><h3>New (2)</h3><ul><li><span class='sev medium'>medium</span> Large disk (&gt;=512 GB) unattached: id-06</li><li><span class='sev low'>low</span> Disk unattached 30+ days: id-06</li></ul></div>
+<div class='box'><h3>Resolved (3)</h3><ul><li><span class='sev high'>high</span> Premium/Ultra disk unattached 30+ days: id-05-retired</li><li><span class='sev medium'>medium</span> Large disk (&gt;=512 GB) unattached: id-05-retired</li><li><span class='sev low'>low</span> Disk unattached 30+ days: id-05-retired</li></ul></div>
+<div class='box'><h3>disks</h3><p class='muted'>Added: 1 · Removed: 1 · Changed: 1</p><ul><li>id-01: DaysUnattached 4.8 → 6.0</li></ul></div>
+</div>
+<h2>Findings (10)</h2>
+<div class='wrap'><table><tr><th>Severity</th><th>Rule</th><th>Item</th><th>Detail</th></tr>
+<tr><td class='sev high'>high</td><td>Premium/Ultra disk unattached 30+ days</td><td>id-05</td><td>DiskName-05 (Sku-05, 768 GB) unattached for 45 days in resourceGroup-05</td></tr>
+<tr><td class='sev medium'>medium</td><td>Large disk (&gt;=512 GB) unattached</td><td>id-04</td><td>DiskName-04 (Sku-04, 563.20 GB) unattached in resourceGroup-04</td></tr>
+<tr><td class='sev medium'>medium</td><td>Large disk (&gt;=512 GB) unattached</td><td>id-05</td><td>DiskName-05 (Sku-05, 768 GB) unattached in resourceGroup-05</td></tr>
+<tr><td class='sev medium'>medium</td><td>Large disk (&gt;=512 GB) unattached</td><td>id-06</td><td>DiskName-06 (Sku-06, 1,280 GB) unattached in resourceGroup-06</td></tr>
+<tr><td class='sev low'>low</td><td>Disk unattached 30+ days</td><td>id-04</td><td>DiskName-04 (Sku-04, 563.20 GB) unattached for 33 days in resourceGroup-04</td></tr>
+<tr><td class='sev low'>low</td><td>Disk unattached 30+ days</td><td>id-05</td><td>DiskName-05 (Sku-05, 768 GB) unattached for 45 days in resourceGroup-05</td></tr>
+<tr><td class='sev low'>low</td><td>Disk unattached 30+ days</td><td>id-06</td><td>DiskName-06 (Sku-06, 1,280 GB) unattached for 75 days in resourceGroup-06</td></tr>
+<tr><td class='sev info'>info</td><td>Recently unattached disk (&lt;30 days) - verify owner</td><td>id-01</td><td>DiskName-01 (Sku-01, 102.40 GB) unattached for 6 days in resourceGroup-01</td></tr>
+<tr><td class='sev info'>info</td><td>Recently unattached disk (&lt;30 days) - verify owner</td><td>id-02</td><td>DiskName-02 (Sku-02, 307.20 GB) unattached for 18 days in resourceGroup-02</td></tr>
+<tr><td class='sev info'>info</td><td>Recently unattached disk (&lt;30 days) - verify owner</td><td>id-03</td><td>DiskName-03 (Sku-03, 460.80 GB) unattached for 27 days in resourceGroup-03</td></tr>
+</table></div>
+<h2>Orphaned managed disks</h2><p class='muted'>Showing 6 of 6</p>
+<div class='wrap'><table><tr><th>DiskName</th><th>subscriptionId</th><th>resourceGroup</th><th>location</th><th>Sku</th><th>SizeGB</th><th>DiskState</th><th>OsType</th><th>DaysUnattached</th><th>Created</th></tr>
+<tr><td class=''>DiskName-01</td><td class=''>subscriptionId-01</td><td class=''>resourceGroup-01</td><td class=''>location-01</td><td class=''>Sku-01</td><td class='num'>102.40</td><td class=''>DiskState-01</td><td class=''>OsType-01</td><td class='num'>6</td><td class=''>Created-01</td></tr>
+<tr><td class=''>DiskName-02</td><td class=''>subscriptionId-02</td><td class=''>resourceGroup-02</td><td class=''>location-02</td><td class=''>Sku-02</td><td class='num'>307.20</td><td class=''>DiskState-02</td><td class=''>OsType-02</td><td class='num'>18</td><td class=''>Created-02</td></tr>
+<tr><td class=''>DiskName-03</td><td class=''>subscriptionId-03</td><td class=''>resourceGroup-03</td><td class=''>location-03</td><td class=''>Sku-03</td><td class='num'>460.80</td><td class=''>DiskState-03</td><td class=''>OsType-03</td><td class='num'>27</td><td class=''>Created-03</td></tr>
+<tr><td class=''>DiskName-04</td><td class=''>subscriptionId-04</td><td class=''>resourceGroup-04</td><td class=''>location-04</td><td class=''>Sku-04</td><td class='num'>563.20</td><td class=''>DiskState-04</td><td class=''>OsType-04</td><td class='num'>33</td><td class=''>Created-04</td></tr>
+<tr><td class=''>DiskName-05</td><td class=''>subscriptionId-05</td><td class=''>resourceGroup-05</td><td class=''>location-05</td><td class=''>Sku-05</td><td class='num'>768</td><td class=''>DiskState-05</td><td class=''>OsType-05</td><td class='num'>45</td><td class=''>Created-05</td></tr>
+<tr><td class=''>DiskName-06</td><td class=''>subscriptionId-06</td><td class=''>resourceGroup-06</td><td class=''>location-06</td><td class=''>Sku-06</td><td class='num'>1,280</td><td class=''>DiskState-06</td><td class=''>OsType-06</td><td class='num'>75</td><td class=''>Created-06</td></tr>
+</table></div>
+<h2>Sources and coverage</h2><div class='wrap'><table><tr><th>Source</th><th>Type</th><th>Status</th><th class='num'>Rows</th><th>Detail</th></tr>
+<tr><td>disks</td><td>resource_graph</td><td>OK</td><td class='num'>6</td><td></td></tr>
+</table></div><footer>Generated by Azure SRE Agent. Sources are read in read-only mode with the agent managed identity. run-orphaned-managed-disks v1.0.0.</footer></main></body></html>

@@ -161,7 +161,7 @@ if (-not $SkipDatabricksGrants) {
     }
 }
 
-Write-Step "LISTO. Pega esto en el bloque CONFIGURACION del .py"
+Write-Step "LISTO. Pega esto en el bloque CONFIGURACION GESTAMP del .py"
 $cfg = @()
 $cfg += "SUBSCRIPTION_ID = `"$SubscriptionId`""
 $cfg += "SRE_TENANT_ID = `"$TenantId`""
