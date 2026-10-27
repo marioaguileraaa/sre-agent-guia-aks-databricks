@@ -1,0 +1,87 @@
+{
+  "version": "V24",
+  "retrieved_utc": "2026-10-13",
+  "source": "https://learn.microsoft.com/en-us/azure/architecture/icons/",
+  "archive_url": "https://arch-center.azureedge.net/icons/Azure_Public_Service_Icons_V24.zip",
+  "archive_sha256": "921594ccd1bf3d9c0a1bd7b6d924e050551a59342f2b353bb74bdcf761c35141",
+  "use": "Architectural diagrams and documentation only; not a product logo.",
+  "icons": [
+    {
+      "key": "aks",
+      "file": "aks.svg",
+      "archive_entry": "Azure_Public_Service_Icons/Icons/compute/10023-icon-service-Kubernetes-Services.svg",
+      "bytes": 3943,
+      "sha256": "81954a481503057498d543a51863b2eb4673284e109662cdc421051d11dba25c"
+    },
+    {
+      "key": "load_balancer",
+      "file": "load-balancer.svg",
+      "archive_entry": "Azure_Public_Service_Icons/Icons/networking/10062-icon-service-Load-Balancers.svg",
+      "bytes": 1457,
+      "sha256": "169edfa4edbc0cab6fdc1eef9243925588504a16f7729734e0e2161a9ca1d16c"
+    },
+    {
+      "key": "virtual_network",
+      "file": "virtual-network.svg",
+      "archive_entry": "Azure_Public_Service_Icons/Icons/networking/10061-icon-service-Virtual-Networks.svg",
+      "bytes": 1860,
+      "sha256": "64a5e75ecef2f9f69067faa2eb131266cb8f2858706f8ab74bfea5ad0d98b14d"
+    },
+    {
+      "key": "network_security_group",
+      "file": "network-security-group.svg",
+      "archive_entry": "Azure_Public_Service_Icons/Icons/networking/10067-icon-service-Network-Security-Groups.svg",
+      "bytes": 1353,
+      "sha256": "cf4023ddaa11961904e1e4601864ccd20b9f60686cb38ad7f8ff8385d855c4de"
+    },
+    {
+      "key": "disk",
+      "file": "disk.svg",
+      "archive_entry": "Azure_Public_Service_Icons/Icons/compute/10032-icon-service-Disks.svg",
+      "bytes": 2036,
+      "sha256": "7ab5cc684d995ff898448b32424a55bbb5c6669a83a0bb7c547047fec21f292f"
+    },
+    {
+      "key": "container_registry",
+      "file": "container-registry.svg",
+      "archive_entry": "Azure_Public_Service_Icons/Icons/containers/10105-icon-service-Container-Registries.svg",
+      "bytes": 2708,
+      "sha256": "c134b0a442f203a7eeeb6f99a1f02ed34e51373d7fca59f96c9f125874c9d7d4"
+    },
+    {
+      "key": "key_vault",
+      "file": "key-vault.svg",
+      "archive_entry": "Azure_Public_Service_Icons/Icons/security/10245-icon-service-Key-Vaults.svg",
+      "bytes": 2231,
+      "sha256": "712b426f54f0fc50d0816dc79df709daa7ac5f93ccaf4e9b3527f627f6e9ad97"
+    },
+    {
+      "key": "managed_identity",
+      "file": "managed-identity.svg",
+      "archive_entry": "Azure_Public_Service_Icons/Icons/identity/10227-icon-service-Managed-Identities.svg",
+      "bytes": 2352,
+      "sha256": "fa2e0fb863e81d7923b5708bed196e19310867a194d23bea96dddc42e302693c"
+    },
+    {
+      "key": "storage_account",
+      "file": "storage-account.svg",
+      "archive_entry": "Azure_Public_Service_Icons/Icons/storage/10086-icon-service-Storage-Accounts.svg",
+      "bytes": 1157,
+      "sha256": "7190d3bb14ce30ce74bd0af873915830fe821e8c5f6ef6f3149e6f7cfb2aa4f7"
+    },
+    {
+      "key": "application_gateway",
+      "file": "application-gateway.svg",
+      "archive_entry": "Azure_Public_Service_Icons/Icons/networking/10076-icon-service-Application-Gateways.svg",
+      "bytes": 3351,
+      "sha256": "531e668e47cf61872b2811ec67dcc103cee2ecc1d272f07132d6196d68ba6c19"
+    },
+    {
+      "key": "monitor",
+      "file": "monitor.svg",
+      "archive_entry": "Azure_Public_Service_Icons/Icons/monitor/00001-icon-service-Monitor.svg",
+      "bytes": 1934,
+      "sha256": "1396f59a7d8fd7505a423842b987c9b343a092263d1ab5c7b0d94d58d8b17448"
+    }
+  ]
+}

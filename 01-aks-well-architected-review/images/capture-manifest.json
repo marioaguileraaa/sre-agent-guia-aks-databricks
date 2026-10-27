@@ -1,0 +1,574 @@
+{
+  "capture_policy": "Real SRE UI or actual dated source; burned-in privacy masks; no private original/config/source data included.",
+  "report_source_note": "Native cover is the actual 2026-10-13T18:17:15Z download. Updated UI examples are HISTORICAL_SOURCE_REPLAY of 2026-10-13T14:41:50Z; added graph derives only original admitted fields, without reevaluating scores or recollecting data.",
+  "captures": [
+    {
+      "filename": "aks04-report-00-cover.png",
+      "capture_utc": "2026-10-14T08:52:23.223074+00:00",
+      "source_type": "ACTUAL_DOWNLOADED_HTML",
+      "published_image_sha256": "9fdeff05a5bbf5e6aa61ad539a067c1dd5e842d6a01d88460cf74f385a8cba03",
+      "pixels": [
+        1600,
+        1196
+      ],
+      "caption": "ACTUAL downloaded HTML | Source 2026-10-13 18:17:15 UTC / b7f6e8aab4a2 | client NAME mask | Current source-partial baseline",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "burned_in_masks": [
+        {
+          "kind": "client NAME",
+          "box": [
+            1225,
+            242,
+            1282.34,
+            269
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            345,
+            472,
+            440.28,
+            496
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            729.33,
+            472,
+            1029.72,
+            496
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            511.94,
+            680,
+            754.44,
+            700
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            1235.33,
+            680,
+            1312.17,
+            700
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            449.36,
+            715.5,
+            691.84,
+            735.5
+          ]
+        },
+        {
+          "kind": "private-logo / client NAME",
+          "box": [
+            1228,
+            155,
+            1446,
+            229
+          ]
+        }
+      ],
+      "source_reference_utc": "2026-10-13T18:17:15Z",
+      "source_sha256": "b7f6e8aab4a25daab442adf38ed43e4ef94733805ff1b5bd1af7c08463ffbc50"
+    },
+    {
+      "filename": "aks04-report-01-assessment.png",
+      "capture_utc": "2026-10-14T08:52:24.292185+00:00",
+      "source_type": "HISTORICAL_SOURCE_REPLAY",
+      "published_image_sha256": "1eea78dd9d8d11daee9d9d8194b13e98fcffd90749136ae4e9a521094131f519",
+      "pixels": [
+        1600,
+        1896
+      ],
+      "caption": "HISTORICAL SOURCE REPLAY | Source 2026-10-13 14:41:50 UTC / 420f4c9e0927 | UI bd98bdd | NOT a fresh collection",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "source_reference_utc": "2026-10-13T14:41:50Z",
+      "source_sha256": "420f4c9e0927f68e7d551e1545abf30c06b27ac0079dbe5eaea1de6d773bc8d9",
+      "ui_commit": "bd98bddd804399a9666cac66eeec7fccfc78f901",
+      "original_source_unchanged": true,
+      "derived_graph_only": true,
+      "burned_in_masks": []
+    },
+    {
+      "filename": "aks04-report-02-drilldown.png",
+      "capture_utc": "2026-10-14T08:52:25.351256+00:00",
+      "source_type": "HISTORICAL_SOURCE_REPLAY",
+      "published_image_sha256": "131fa2003656a099e9985e806a1748b6898024b9d738f7f2ce1c8bfb53c412ee",
+      "pixels": [
+        1600,
+        1896
+      ],
+      "caption": "HISTORICAL SOURCE REPLAY | Source 2026-10-13 14:41:50 UTC / 420f4c9e0927 | UI bd98bdd | NOT a fresh collection",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "source_reference_utc": "2026-10-13T14:41:50Z",
+      "source_sha256": "420f4c9e0927f68e7d551e1545abf30c06b27ac0079dbe5eaea1de6d773bc8d9",
+      "ui_commit": "bd98bddd804399a9666cac66eeec7fccfc78f901",
+      "original_source_unchanged": true,
+      "derived_graph_only": true,
+      "burned_in_masks": [
+        {
+          "kind": "private-field",
+          "box": [
+            353,
+            369.39,
+            436.88,
+            391.39
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            1106.8,
+            1035.78,
+            1281.27,
+            1057.78
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            1014.7,
+            1056.78,
+            1105.08,
+            1078.78
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            1385.34,
+            1077.78,
+            1449.05,
+            1099.78
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            1014.7,
+            1098.78,
+            1037.45,
+            1120.78
+          ]
+        }
+      ]
+    },
+    {
+      "filename": "aks04-report-03-observed-architecture.png",
+      "capture_utc": "2026-10-14T08:52:26.691598+00:00",
+      "source_type": "HISTORICAL_SOURCE_REPLAY",
+      "published_image_sha256": "9b0e6dd5581635ccafff7d98f1eb8602734a36d6701dd836e519c7882388a834",
+      "pixels": [
+        1600,
+        1896
+      ],
+      "caption": "HISTORICAL SOURCE REPLAY | Source 2026-10-13 14:41:50 UTC / 420f4c9e0927 | UI bd98bdd | NOT a fresh collection | Graph derived only from original admitted IDs/fields",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "source_reference_utc": "2026-10-13T14:41:50Z",
+      "source_sha256": "420f4c9e0927f68e7d551e1545abf30c06b27ac0079dbe5eaea1de6d773bc8d9",
+      "ui_commit": "bd98bddd804399a9666cac66eeec7fccfc78f901",
+      "original_source_unchanged": true,
+      "derived_graph_only": true,
+      "burned_in_masks": []
+    },
+    {
+      "filename": "aks04-report-04-reference.png",
+      "capture_utc": "2026-10-14T08:52:28.180740+00:00",
+      "source_type": "HISTORICAL_SOURCE_REPLAY",
+      "published_image_sha256": "2745e6e7eef8ea33c9341a95469ec15970f676c0cf4db0c9ded20241d69090d8",
+      "pixels": [
+        1600,
+        1896
+      ],
+      "caption": "HISTORICAL SOURCE REPLAY | Source 2026-10-13 14:41:50 UTC / 420f4c9e0927 | UI bd98bdd | NOT a fresh collection | Reference proposal NOT deployed",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "source_reference_utc": "2026-10-13T14:41:50Z",
+      "source_sha256": "420f4c9e0927f68e7d551e1545abf30c06b27ac0079dbe5eaea1de6d773bc8d9",
+      "ui_commit": "bd98bddd804399a9666cac66eeec7fccfc78f901",
+      "original_source_unchanged": true,
+      "derived_graph_only": true,
+      "burned_in_masks": []
+    },
+    {
+      "filename": "aks04-report-05-finops.png",
+      "capture_utc": "2026-10-14T08:52:30.219994+00:00",
+      "source_type": "HISTORICAL_SOURCE_REPLAY",
+      "published_image_sha256": "d13884665e70dad8f325285f4ed2816163876f46467b64f8b41e569500820e2b",
+      "pixels": [
+        1600,
+        1896
+      ],
+      "caption": "HISTORICAL SOURCE REPLAY | Source 2026-10-13 14:41:50 UTC / 420f4c9e0927 | UI bd98bdd | NOT a fresh collection | Observed billing currency; savings uncalculated",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "source_reference_utc": "2026-10-13T14:41:50Z",
+      "source_sha256": "420f4c9e0927f68e7d551e1545abf30c06b27ac0079dbe5eaea1de6d773bc8d9",
+      "ui_commit": "bd98bddd804399a9666cac66eeec7fccfc78f901",
+      "original_source_unchanged": true,
+      "derived_graph_only": true,
+      "burned_in_masks": [
+        {
+          "kind": "private-field",
+          "box": [
+            755.61,
+            460.75,
+            1016.45,
+            482.75
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            1121.03,
+            460.75,
+            1393.92,
+            482.75
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            1261.83,
+            491.75,
+            1421.47,
+            513.75
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            663.52,
+            512.75,
+            780.78,
+            534.75
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            485.5,
+            1390.25,
+            636.27,
+            1409.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            360,
+            1408.25,
+            432.58,
+            1427.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            518.75,
+            1408.25,
+            641.28,
+            1427.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            360,
+            1426.25,
+            465.62,
+            1445.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            396.16,
+            1462.25,
+            467.41,
+            1481.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            485.5,
+            1591.25,
+            638.69,
+            1610.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            360,
+            1609.25,
+            439.91,
+            1628.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            526.09,
+            1609.25,
+            648.61,
+            1628.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            360,
+            1627.25,
+            465.62,
+            1646.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            396.16,
+            1663.25,
+            467.41,
+            1682.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            485.5,
+            1792.25,
+            638.94,
+            1811.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            360,
+            1810.25,
+            440.67,
+            1829.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            526.86,
+            1810.25,
+            649.38,
+            1829.25
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            360,
+            1828.25,
+            465.62,
+            1847.25
+          ]
+        }
+      ]
+    },
+    {
+      "filename": "aks04-step01-cluster-choice.png",
+      "capture_utc": "2026-10-13T21:17:55.203575+00:00",
+      "source_type": "ACTUAL_SRE_UI",
+      "published_image_sha256": "1752e7fee0ca835c6c60b32e52ecac7bab7e7cac4ae9d22c20fc8e9603db0de0",
+      "pixels": [
+        1600,
+        1146
+      ],
+      "caption": "ACTUAL Builder parameter preview | 2026-10-13 | Saved baseline 3aefbd5f0246: 11 typed inputs | No execution",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "burned_in_masks": [
+        {
+          "kind": "private-field",
+          "box": [
+            839.5,
+            377.5,
+            1444.0,
+            410.5
+          ]
+        }
+      ]
+    },
+    {
+      "filename": "aks04-step02-01-python-menu.png",
+      "capture_utc": "2026-10-13T21:09:17.888863+00:00",
+      "source_type": "ACTUAL_SRE_UI",
+      "published_image_sha256": "3f5392f62e68c7efecfd01231e0cf81b2fd551da2cddaf88c4f0d0164107ae74",
+      "pixels": [
+        1600,
+        1146
+      ],
+      "caption": "ACTUAL SRE UI | 2026-10-13 | Read-only navigation; no tool created",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "burned_in_masks": []
+    },
+    {
+      "filename": "aks04-step02-02-code.png",
+      "capture_utc": "2026-10-13T21:09:18.735356+00:00",
+      "source_type": "ACTUAL_SRE_UI",
+      "published_image_sha256": "3b1f2c01085ddfb05930f6499718516596858e7756e72dad8c8929f0eb11b085",
+      "pixels": [
+        1600,
+        1146
+      ],
+      "caption": "ACTUAL Builder draft | 2026-10-13 | Readback 3aefbd5f0246 | Private code masked; no save/test",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "burned_in_masks": [
+        {
+          "kind": "private-field",
+          "box": [
+            823.5,
+            354.5,
+            1460.0,
+            413.5
+          ]
+        },
+        {
+          "kind": "private-code",
+          "box": [
+            826.5,
+            428.5,
+            1456.5,
+            917.5
+          ]
+        }
+      ]
+    },
+    {
+      "filename": "aks04-step02-03-typed-parameters.png",
+      "capture_utc": "2026-10-13T21:17:55.540095+00:00",
+      "source_type": "ACTUAL_SRE_UI",
+      "published_image_sha256": "4b4fdee8ce8549ad053728b81617219af969e1be0af2875d35c93ab5827260a7",
+      "pixels": [
+        1600,
+        1146
+      ],
+      "caption": "ACTUAL parameter preview | 2026-10-13 | Baseline paging 25 / 0; current repository schema adds cluster_names | No test",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "burned_in_masks": [
+        {
+          "kind": "private-field",
+          "box": [
+            839.5,
+            372.5,
+            1444.0,
+            405.5
+          ]
+        }
+      ]
+    },
+    {
+      "filename": "aks04-step02-04-identity.png",
+      "capture_utc": "2026-10-13T21:14:42.544607+00:00",
+      "source_type": "ACTUAL_SRE_UI",
+      "published_image_sha256": "5eb35066e2a3cd43a5ac426136ee46a7ca8739c76f39f3ee2c1fa18476ab6f9c",
+      "pixels": [
+        1600,
+        1146
+      ],
+      "caption": "ACTUAL SRE Identity tab | 2026-10-13 | Verified baseline: preset Off; Python uses explicit UAMI | No save/test",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "burned_in_masks": []
+    },
+    {
+      "filename": "aks04-step03-skill-readback.png",
+      "capture_utc": "2026-10-13T21:09:12.006136+00:00",
+      "source_type": "ACTUAL_SRE_UI",
+      "published_image_sha256": "2336e2ffe6ae0e43dd5eae62c6bf5e483afc2b604807e4e152436816522cd85d",
+      "pixels": [
+        1600,
+        1146
+      ],
+      "caption": "ACTUAL SRE saved skill | 2026-10-13 | aks-waf-live + generate-aks-waf-report; no changes",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "burned_in_masks": [
+        {
+          "kind": "private-field",
+          "box": [
+            1323.66,
+            626,
+            1406.11,
+            648
+          ]
+        },
+        {
+          "kind": "private-field",
+          "box": [
+            1282.75,
+            261,
+            1365.2,
+            283
+          ]
+        }
+      ]
+    },
+    {
+      "filename": "aks04-step04-agent-readback.png",
+      "capture_utc": "2026-10-13T21:09:22.408734+00:00",
+      "source_type": "ACTUAL_SRE_UI",
+      "published_image_sha256": "5a33ab8b30c1f3e65344179fe612fea6dbfcf00724bc5d21dd7aa1b13cbf28c2",
+      "pixels": [
+        1600,
+        1146
+      ],
+      "caption": "ACTUAL SRE saved specialist | 2026-10-13 | One selected tool + one skill; no changes",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "burned_in_masks": []
+    },
+    {
+      "filename": "aks04-step07-create-menu.png",
+      "capture_utc": "2026-10-13T21:29:04.141733+00:00",
+      "source_type": "ACTUAL_SRE_UI",
+      "published_image_sha256": "2d41bd167aa4a32334f6bb7db94c4890edb2af2a79c8604ba2e33a0a043fa617",
+      "pixels": [
+        1600,
+        1146
+      ],
+      "caption": "ACTUAL Builder > Create > Trigger | 2026-10-13 | Scheduled-task entry; no task created",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "burned_in_masks": []
+    },
+    {
+      "filename": "aks04-step07-scheduling.png",
+      "capture_utc": "2026-10-13T21:29:02.345320+00:00",
+      "source_type": "ACTUAL_SRE_UI",
+      "published_image_sha256": "087c26739effa76a2f4d94a2d88909f81a9d38f10f8ee469fbd30e05b271850c",
+      "pixels": [
+        1600,
+        1146
+      ],
+      "caption": "ACTUAL SRE scheduling view | 2026-10-13 | No Case04 scheduled task created; cadence remains optional",
+      "cloud_configuration_changed": false,
+      "new_runtime_invocation": false,
+      "burned_in_masks": []
+    }
+  ]
+}
