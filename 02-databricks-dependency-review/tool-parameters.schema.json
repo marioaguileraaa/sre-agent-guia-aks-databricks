@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "generate-databricks-dependency-report parameters",
+  "title": "databricks-dependency-report parameters",
   "type": "object",
   "additionalProperties": false,
   "properties": {

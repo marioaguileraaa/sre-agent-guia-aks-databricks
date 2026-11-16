@@ -3,6 +3,11 @@
 > **Azure SRE Agent** · Herramienta Python de solo lectura · Skill · Subagente restringido ·
 > Informe HTML + JSON completo + CSV de hallazgos + CSV de dependencias
 
+> 🔄 **Actualización 16/11/2026: leed primero [este bloque de `LEEME-PRIMERO.md`](../LEEME-PRIMERO.md#-actualización-16112026--leed-esto-primero).**
+> La herramienta se llama ahora **`databricks-dependency-report`** (el portal corta *Tool Name* a 36
+> caracteres), hay que pegar el `.py` actual (si no, `identity_mismatch`) y el portal ha cambiado
+> respecto a las capturas.
+
 El subagente `databricks-dependency-live` revisa **hasta 5 workspaces de Azure Databricks** y genera
 un informe con:
 
@@ -34,10 +39,10 @@ Como ya desplegasteis AKS, **buena parte del trabajo ya está hecha**:
 |---|---|
 | **El SRE Agent** | El **mismo** agente. No hay que crear otro |
 | **La identidad del agente (Client ID)** | El **mismo** Client ID. Es el valor de `MANAGED_IDENTITY_CLIENT_ID` que pusisteis en el `.py` de AKS: copiadlo de ahí |
-| **Roles en el SRE Agent** (quien configura y quien usa) | Los **mismos**. Quien creó la herramienta de AKS puede crear esta; quien usa `@aks-waf-live` puede usar `@databricks-dependency-live` |
+| **Roles en el SRE Agent** (quien configura y quien usa) | Los **mismos**. Quien creó la herramienta de AKS puede crear esta; quien usa el subagente `aks-waf-live` puede usar `databricks-dependency-live` |
 | **PowerShell 7 + Azure CLI** | Igual. Mismo `az login --tenant <TENANT_ID>` |
-| **Saber crear herramienta, skill y subagente** en el Builder | **Mismas pantallas y mismo orden**. Solo cambian nombre, código, parámetros e instrucciones |
-| **Reader en Azure** | Si el script de AKS se ejecutó sobre el **Management Group** o la **suscripción** donde está el workspace de Databricks, la identidad **ya tiene Reader**. El script de Databricks lo detecta y lo deja como está (no duplica) |
+| **Saber crear herramienta, skill y subagente** en **Build + configure → Agent Canvas** (antes *Builder*) | **Mismas pantallas y mismo orden** (con los [cambios del portal](../LEEME-PRIMERO.md#-actualización-16112026--leed-esto-primero)). Solo cambian nombre, código e instrucciones |
+| **Reader en Azure** | Si el script de AKS se ejecutó sobre el **Management Group** o la **suscripción** donde está el workspace de Databricks, la identidad **ya tiene Reader**. El script de Databricks lo detecta (también si viene heredado del Management Group) y lo deja como está (no duplica) |
 
 **Lo nuevo** (y lo que de verdad lleva tiempo):
 
@@ -46,21 +51,22 @@ Como ya desplegasteis AKS, **buena parte del trabajo ya está hecha**:
 | 1 | Dar acceso a la identidad **dentro del workspace** de Databricks (service principal + `CAN_VIEW`) | **Workspace Admin** | [Paso 1](#paso-1--dar-permisos-a-la-identidad-del-agente) |
 | 2 | Dar acceso de **solo metadatos** en **Unity Catalog** | **Metastore Admin** u **owner** del catálogo | [Paso 1](#paso-1--dar-permisos-a-la-identidad-del-agente) |
 | 3 | Configurar **otro `.py`** (el de Databricks, no el de AKS) | Quien configura el agente | [Paso 2](#paso-2--configurar-el-py) |
-| 4 | Crear una **herramienta nueva** `generate-databricks-dependency-report` | Quien configura el agente | [Paso 3](#paso-3--crear-la-herramienta-python) |
+| 4 | Crear una **herramienta nueva** `databricks-dependency-report` | Quien configura el agente | [Paso 3](#paso-3--crear-la-herramienta-python) |
 | 5 | Probarla en el **Test playground** | Quien configura el agente | [Paso 4](#-paso-4--test-playground-qué-valores-poner-en-cada-parámetro) |
 | 6 | Crear un **skill nuevo** `databricks-dependency-live` | Quien configura el agente | [Paso 5](#paso-5--crear-el-skill) |
 | 7 | Crear un **subagente nuevo** `databricks-dependency-live` | Quien configura el agente | [Paso 6](#paso-6--crear-el-subagente) |
 
 > ⚠️ **Diferencias con AKS que suelen confundir**
 >
-> - **Es una herramienta NUEVA.** No editéis `generate-aks-waf-report`: usad **Create → Tool →
->   Python tool** y cread `generate-databricks-dependency-report`.
+> - **Es una herramienta NUEVA.** No editéis `generate-aks-waf-report`: usad **Create ▾ → Tool › →
+>   Python tool** y cread `databricks-dependency-report` (no `generate-databricks-dependency-report`:
+>   el campo *Tool Name* admite 36 caracteres y ese nombre tiene 37).
 > - **Permisos en 3 sitios, no en 1.** En AKS bastaba con Azure. Aquí, además de Azure, hacen falta
 >   el **Workspace Admin** y el **administrador de Unity Catalog**. Ser Owner de la suscripción **no**
 >   da permisos dentro de Unity Catalog. Ver [⭐ Roles](#-roles-y-permisos-quién-necesita-qué-leer-antes-de-empezar).
-> - **El parámetro del nombre SÍ lleva lista de valores.** En AKS quitasteis el enum de
->   `cluster_name`; aquí `workspace_name` **mantiene** el enum con los nombres de vuestros
->   workspaces (más `""`).
+> - **El nombre del workspace se escribe a mano.** Igual que `cluster_name` en AKS, `workspace_name`
+>   es texto libre (hoy no hay enum ni desplegable): el código solo acepta las claves de
+>   `APPROVED_WORKSPACES`.
 > - **Una suscripción por configuración:** el `.py` admite **hasta 5 workspaces de la misma
 >   suscripción** (`SUBSCRIPTION_ID`).
 > - **Solo lee metadatos:** nunca `SELECT`, nunca arranca clústeres, nunca lee datos.
@@ -133,7 +139,7 @@ Si falta el plano 2, el informe sale igual pero con esa parte en **«No evaluado
 | 2 | **Administrador del workspace Databricks** | Añade la identidad como *service principal* y le da **CAN_VIEW** en jobs, pipelines y warehouses (paso 2 del script) | **Workspace Admin** en cada workspace | Ver R2 (cómo se consigue) |
 | 3 | **Administrador de Unity Catalog** | Da `BROWSE`, `USE_CATALOG` y `USE_SCHEMA` en los catálogos (paso 3 del script) | **Metastore Admin**, o **owner** de cada catálogo, o el privilegio **`MANAGE`** en el catálogo | Databricks → **Catalog** → catálogo → **Permissions**; o la consola de cuenta para Metastore Admin |
 | 4 | **Quien configura el SRE Agent** | Crea la herramienta, el skill y el subagente; usa *Test playground* | **SRE Agent Administrator**, o **SRE Agent Author + SRE Agent Standard User** (los dos juntos). ❌ Owner/Contributor de Azure **no** sustituyen a estos roles | Portal → recurso del **SRE Agent** → **Access control (IAM)** |
-| 5 | **Usuarios** que piden informes | Chatean con `@databricks-dependency-live` | **SRE Agent Standard User** | Igual que el 4 |
+| 5 | **Usuarios** que piden informes | Chatean con el subagente `databricks-dependency-live` (elegido con **/agent**) | **SRE Agent Standard User** | Igual que el 4 |
 
 > **Lo más rápido:** que **una sola persona** con **Owner** en la suscripción y **Metastore Admin**
 > ejecute el script completo. Si eso no es posible, la persona 1 ejecuta solo la parte de Azure
@@ -193,7 +199,7 @@ Nunca se da Contributor, Workspace Admin, `CAN_MANAGE`, `SELECT` ni nada que per
 
 | Error | Causa | Solución |
 |---|---|---|
-| `AuthorizationFailed ... roleAssignments/write` | Quien ejecuta es **Contributor**, no puede asignar roles | Owner, User Access Administrator o RBAC Administrator en la suscripción |
+| `AuthorizationFailed ... roleAssignments/write`, seguido de `[AVISO] No se pudo asignar Reader en …` | Quien ejecuta es **Contributor**, no puede asignar roles | Owner, User Access Administrator o RBAC Administrator en la suscripción |
 | `No se pudo anadir el service principal` (401/403) | No sois **Workspace Admin** | Hacer [R2](#r2--cómo-ser-workspace-admin-persona-2-en-1-minuto) y volver a ejecutar |
 | `Catalogo X: ... hace falta ser owner del catalogo o metastore admin` | Sin permisos de Unity Catalog | La persona 3 lo hace a mano (SQL en [Paso 1](#paso-1--dar-permisos-a-la-identidad-del-agente)) |
 | `No encuentro la identidad con Client ID` | Se copió el *Object ID*, o `az login` en otro tenant | Copiar el **Client ID** y `az login --tenant` |
@@ -201,14 +207,16 @@ Nunca se da Contributor, Workspace Admin, `CAN_MANAGE`, `SELECT` ni nada que per
 | `No se han encontrado workspaces de Databricks` | Suscripción equivocada o `-Workspaces` mal escrito | `-SubscriptionId` correcto; formato `rg/nombre` |
 | Rol PIM asignado pero falla | Rol **elegible**, no activado | Activarlo en PIM, esperar 1–2 min |
 | Todo OK pero el agente da **403** | Propagación | Esperar **5–10 min** |
-| No se puede guardar en el Builder | Falta el rol del SRE Agent | **SRE Agent Administrator** (o Author + Standard User) |
+| *Save* / *Create tool* en gris, o no se puede guardar el skill o el subagente | Aún no se ha pulsado **Test** en el playground de la herramienta, o falta el rol del SRE Agent | Primero **Test**; si sigue en gris tras un Test correcto, **SRE Agent Administrator** (o Author + Standard User) |
 
 ---
 
 ## Paso 1 · Dar permisos a la identidad del agente
 
-**Dónde está el Client ID del agente:** sre.azure.com → vuestro agente → **Settings → Azure
-settings → Managed Identity → Go to Identity → Overview → Client ID** (no el *Object ID*).
+**Dónde está el Client ID del agente:** es el mismo de AKS, la línea
+`MANAGED_IDENTITY_CLIENT_ID = "…"` del `.py` de AKS. También está en el portal de Azure → grupo de
+recursos del agente → identidad administrada `id-…` → **Overview → Client ID** (no el *Object ID*).
+En el portal del agente ya no hay *Settings*.
 
 En PowerShell 7, dentro de esta carpeta (`02-databricks-dependency-review`):
 
@@ -230,14 +238,16 @@ Opciones:
 
 El script tiene **3 partes** y va mostrando `[OK]` o `[AVISO]` en cada una:
 
-1. **Azure:** `Reader` en la suscripción.
+1. **Azure:** `Reader` en la suscripción. Si ya lo tiene (también heredado del Management Group),
+   dice `Reader ya asignado` y no lo duplica; si no puede asignarlo, avisa con `[AVISO]`.
 2. **Databricks** (por cada workspace): añade el service principal y da `CAN_VIEW` en jobs,
    pipelines y SQL warehouses.
 3. **Unity Catalog**: `BROWSE`, `USE_CATALOG` y `USE_SCHEMA` en cada catálogo (salta `system`,
    `hive_metastore`, `samples`).
 
-Al final imprime **el bloque de configuración** para pegar en el `.py` (paso 2) y **la lista para
-el parámetro `workspace_name`** (paso 3).
+Al final imprime **el bloque de configuración** para pegar en el `.py` (paso 2). Después imprime
+también una lista «para el parámetro `workspace_name` (enum)»: hoy no hace falta, porque el portal
+ya no tiene editor de enum.
 
 > Se puede **volver a ejecutar** sin problema: lo que ya existe lo deja como está.
 
@@ -288,24 +298,33 @@ dejar en `"disabled"`.
 
 Abrid [`generate-databricks-dependency-report.py`](generate-databricks-dependency-report.py) en un
 editor de texto (Bloc de notas, VS Code…). **Solo se edita el bloque de arriba**, entre
-`CONFIGURACION (editar solo esto)` y `FIN CONFIGURACION`.
+`CONFIGURACION GESTAMP (editar solo esto)` y `FIN CONFIGURACION GESTAMP`.
 
-El script imprime las líneas `SUBSCRIPTION_ID` … `KEYVAULT_OAUTH_SECRET_URI` y el
-`APPROVED_WORKSPACES` completo: **sustituid esas líneas** por las impresas y **dejad las de
-`CLIENT_NAME`, `CLIENT_LOGO_DATA_URI` y `CLIENT_LOGO_ALT`** (podéis cambiar el nombre que sale en
-el informe). Queda así (valores de ejemplo):
+Pegad todo lo que imprime el script (desde `SUBSCRIPTION_ID` hasta el `}` final de
+`APPROVED_WORKSPACES`) **justo encima de la línea
+`# =================== FIN CONFIGURACION GESTAMP ===================`** (la línea 312), **sin borrar
+nada**. Python usa la última definición, así que lo pegado sustituye a los valores `<...>`.
+`CLIENT_NAME` ya es `'Gestamp'` y el logo ya está incluido: no hay que tocarlos.
+
+Borrar antes las líneas de ejemplo (`SUBSCRIPTION_ID` … `KEYVAULT_OAUTH_SECRET_URI` y el
+`APPROVED_WORKSPACES` de ejemplo) es opcional. Lo que **no** hay que hacer es borrar todo el tramo
+entre `SUBSCRIPTION_ID` y `APPROVED_WORKSPACES`: en medio están `CLIENT_NAME` y el logo, y el fichero
+falla con `NameError: name 'CLIENT_LOGO_ALT' is not defined`.
+
+Así queda el final del bloque (valores de ejemplo):
 
 ```python
-# ===================== CONFIGURACION (editar solo esto) =====================
+# ===================== CONFIGURACION GESTAMP (editar solo esto) =====================
+# (aquí sigue todo lo que ya trae el fichero, sin borrar nada: los valores <...> de ejemplo,
+#  CLIENT_NAME = 'Gestamp', el logo y el APPROVED_WORKSPACES de ejemplo)
+# ---- lo pegado: lo que imprime grant-databricks-permissions.ps1 ----
 SUBSCRIPTION_ID = "aaaaaaaa-0000-0000-0000-000000000001"
 SRE_TENANT_ID = "11111111-1111-1111-1111-111111111111"
 TARGET_TENANT_ID = "11111111-1111-1111-1111-111111111111"     # el MISMO que SRE_TENANT_ID
 MANAGED_IDENTITY_CLIENT_ID = "33333333-3333-3333-3333-333333333333"
 FEDERATED_APP_CLIENT_ID = ""                                   # vacío
 KEYVAULT_OAUTH_SECRET_URI = ""                                 # vacío
-CLIENT_NAME = 'Mi empresa'                                     # nombre que sale en el informe
-CLIENT_LOGO_DATA_URI = ""                                      # opcional
-CLIENT_LOGO_ALT = 'Logotipo del cliente'
+
 APPROVED_WORKSPACES = {
     "dbw-datos-pro": {                                         # nombre EXACTO del workspace
         "resource_group": "rg-datos",
@@ -321,9 +340,9 @@ APPROVED_WORKSPACES = {
         "cost_scope": "disabled",                              # o "managed_resource_group"
         "cost_timeframe": "month_to_date",
         "requirements": {},
-    }
+    },
 }
-# =================== FIN CONFIGURACION ===================
+# =================== FIN CONFIGURACION GESTAMP ===================
 ```
 
 Qué es cada valor y de dónde sale:
@@ -341,34 +360,44 @@ Qué es cada valor y de dónde sale:
 > - Cada variable en **su propia línea**. Si queda `"..."CLIENT_NAME = "..."` en la misma línea,
 >   la prueba da `SyntaxError: invalid syntax`.
 > - `True`/`False` con mayúscula inicial (es Python).
-> - No toquéis nada por debajo de `FIN CONFIGURACION`.
+> - No borréis el tramo entero entre `SUBSCRIPTION_ID` y `APPROVED_WORKSPACES` (`NameError`).
+> - No toquéis nada por debajo de `FIN CONFIGURACION GESTAMP`.
 
 ---
 
 ## Paso 3 · Crear la herramienta Python
 
-1. **sre.azure.com → vuestro agente → Builder → Agent Canvas → flecha junto a _Create_ → Tool →
-   Python tool**.
+1. **sre.azure.com → vuestro agente → Build + configure → Agent Canvas → Create ▾** (la flecha junto
+   a *Create*) **→ Tool › → Python tool**.
 
    ![Menú Create > Tool > Python tool](images/08-create-drop-down-arrow.png)
 
    **1** pulsad la **flecha** de *Create* (no el botón: ese abre el formulario de subagente) ·
    **2** **Tool → Python tool**.
 
-2. Pestaña **Code** (no uséis *Generate*):
-   - **Name:** `generate-databricks-dependency-report`
+2. Pestaña **Code** (el diálogo tiene 3 pestañas: *Code / Test playground / Identity*; no uséis
+   *Generate*):
+   - **Tool Name:** `databricks-dependency-report`. ⚠️ El campo admite **36 caracteres**:
+     `generate-databricks-dependency-report` (37) se queda en `generate-databricks-dependency-repor`.
+   - **Timeout (seconds):** `900` (viene 120; 900 es el máximo).
    - **Description** (copiar tal cual):
      ```text
      Read-only Azure Databricks dependency, configuration, security and FinOps review for the fixed approved workspaces. Collect source-qualified ARM, Databricks workspace and Unity Catalog evidence; return offline HTML, complete JSON, findings CSV and inventory CSV, or bounded typed queries. No remediation.
      ```
    - **Code:** pegad el `.py` **completo** ya configurado en el paso 2.
-   - **Requirements:** el contenido de [`requirements.txt`](requirements.txt).
-   - **Timeout:** `900` segundos.
+   - No hay campo *Requirements*: el entorno Python del SRE Agent ya trae azure-identity y Pillow
+     ([`requirements.txt`](requirements.txt) es solo informativo).
 
    ![Código y timeout](images/02-private-code-and-timeout.png)
 
-   **1** nombre `generate-databricks-dependency-report` y timeout `900` · **2** editor donde se
-   pega el fichero completo (en la captura está tapado a propósito).
+   **1** nombre de la herramienta y timeout `900` (en esta captura de octubre se ve
+   `generate-databricks-dependency-report`, creada por API; hoy usad `databricks-dependency-report`)
+   · **2** editor donde se pega el fichero completo (en la captura está tapado a propósito).
+
+   > **¿Ya la creasteis con el nombre cortado** (`generate-databricks-dependency-repor`)? O la volvéis
+   > a crear como `databricks-dependency-report`, o usáis **exactamente** el nombre guardado en el
+   > `SKILL.md` (línea *Use ONLY …*), en las instrucciones del subagente (*Copy-ready instructions*) y
+   > al elegirla en *Choose tools*.
 
 3. Pestaña **Identity**: **Enable Azure Identity en Off**. El código ya usa la identidad del agente
    por su Client ID.
@@ -377,14 +406,20 @@ Qué es cada valor y de dónde sale:
 
    **1** pestaña **Identity** · **2** interruptor en **Off**.
 
-4. **Parámetros (12).** Tipos y valores por defecto (referencia completa en
-   [`tool-parameters.schema.json`](tool-parameters.schema.json)):
+   > ⚠️ No lo encendáis, ni siquiera para mirar: el portal añade 4 líneas al principio del código
+   > (`# Azure Identity Authentication`, `from azure.identity import DefaultAzureCredential`,
+   > `credential = DefaultAzureCredential()` y `AZURE_ARM_TOKEN = …`) que se quedan aunque lo
+   > volváis a apagar. Si pasa, borradlas en la pestaña **Code**.
+
+4. **Parámetros (12): automáticos.** No hay editor de parámetros ni de enum: al pegar el código, el
+   portal saca los 12 de `def main(...)` (aunque `main` esté al final del fichero). Tipos y valores
+   por defecto (referencia completa en [`tool-parameters.schema.json`](tool-parameters.schema.json)):
 
    | Parámetro | Tipo | Por defecto | Valores |
    |---|---|---|---|
    | `operation` | string | `report` | `report`, `query`, `list_workspaces` |
    | `view` | string | `summary` | `summary`, `workspace`, `compute`, `jobs`, `pipelines`, `warehouses`, `unity_catalog`, `resources`, `findings`, `finops`, `coverage`, `actions`, `dependencies` |
-   | `workspace_name` | string | `""` | ⚠️ **Enum: cambiadlo** (ver abajo) |
+   | `workspace_name` | string | `""` | Nombre exacto de una clave de `APPROVED_WORKSPACES` (texto libre) |
    | `workspace_names` | string | `""` | Hasta 5 nombres separados por comas, **sin espacios** |
    | `workload_name` | string | `""` | Filtro exacto (clúster, job, pipeline, warehouse, catálogo…) |
    | `classification` | string | `all` | `all`, `OBSERVED`, `INFERRED`, `UNKNOWN` |
@@ -395,40 +430,47 @@ Qué es cada valor y de dónde sale:
    | `limit` | **int** | `25` | 1–100 |
    | `offset` | **int** | `0` | 0 o más |
 
-   > ⚠️ **`workspace_name` — el único valor que hay que cambiar en los parámetros.** En el esquema
-   > viene con los valores permitidos `""` y `<NOMBRE_WORKSPACE_DATABRICKS>`. **Sustituid
-   > `<NOMBRE_WORKSPACE_DATABRICKS>` por el nombre exacto de vuestro(s) workspace(s)**, dejando
-   > también `""`. Es la lista que imprime el script al final, por ejemplo:
-   > `["", "dbw-datos-pro", "dbw-datos-lab"]`. Los nombres tienen que ser **idénticos** a las
-   > claves de `APPROVED_WORKSPACES`.
+   > `workspace_name` no lleva enum ni desplegable: en el playground se teclea. El código solo acepta
+   > las claves de `APPROVED_WORKSPACES` (si no, `workspace_name must exactly match the fixed operator
+   > allowlist`). La lista «para el enum» que imprime el script ya no se usa.
 
    ![Herramienta guardada con los 12 parámetros](images/01-saved-tool-and-12-parameters.png)
 
    **1** nombre de la herramienta · **2** firma de `main` · **3** los 12 parámetros
-   (`limit` y `offset` como **int**).
+   (`limit` y `offset` como **int**). *(Captura de octubre, con el nombre
+   `generate-databricks-dependency-report`; hoy, `databricks-dependency-report`.)*
 
-5. **Create tool** / **Save**, y pasad al paso 4 (pruebas).
+5. Pestaña **Test playground** → **Test**: haced las pruebas del [paso 4](#-paso-4--test-playground-qué-valores-poner-en-cada-parámetro)
+   y después **Create tool** (sigue en gris hasta pulsar **Test**).
 
 ---
 
 ## ⭐ Paso 4 · Test playground: qué valores poner en cada parámetro
 
-En la herramienta (**Builder → Agent Canvas → `generate-databricks-dependency-report` → Test
-playground**) se ven los 12 parámetros con un valor ya escrito. **Ese valor es el correcto para
-casi todos.** Solo hay que cambiar 1–3 campos según la prueba.
+Es la **pestaña Test playground** del diálogo de la herramienta (al crearla, o después: **Build +
+configure → Agent Canvas → Table view → Python tools → `databricks-dependency-report` → lápiz**), no
+el botón *Test playground* de la barra del Agent Canvas. Pulsad **Test**: salen 12 cajas **vacías**
+(sin valores ni desplegables, tampoco para `workspace_name`). **Escribid todos los valores de la
+tabla de cada prueba**; lo marcado con ← es lo que cambia entre pruebas. **Save** / **Create tool**
+siguen en gris hasta que la prueba se ha ejecutado (no es un problema de rol).
+
+> ⏱️ **Límite del playground:** la prueba se corta a los **~100 s con HTTP 504**, aunque el Timeout
+> sea 900. Si las pruebas 2 o 3 dan 504, no es un fallo de la herramienta: lanzad la consulta o el
+> informe desde el chat ([Paso 7](#paso-7--probar-en-un-chat-nuevo)), donde puede tardar unos minutos.
 
 ### Reglas para que no dé error
 
-1. **Nunca dejéis vacíos** `operation`, `view`, `classification`, `area`, `level`, `severity` ni
-   `status`. Vacío da `invalid_parameter … must use its declared enum`. Sus valores son `report`,
-   `summary`, `all`, `all`, `all`, `all`, `all`.
-2. **`limit` y `offset` son números**: `25` y `0`.
+1. **Escribid todos los valores.** `operation`, `view`, `classification`, `area`, `level`,
+   `severity` y `status` nunca vacíos; sus valores son `report`, `summary`, `all`, `all`, `all`,
+   `all`, `all` salvo lo que cambia en cada prueba. `invalid_parameter … must use its declared enum`
+   = valor mal escrito en uno de ellos.
+2. **`limit` y `offset` son números**: `25` y `0`. Con texto, la plataforma da un error de tipo.
 3. Con **`report`** y **`list_workspaces`**, los filtros se quedan **por defecto**: `view=summary`,
    `classification/area/level/severity/status=all`, `workload_name` vacío, `limit=25`,
    `offset=0`. Si cambiáis uno, da `invalid_combination`.
 4. **`workspace_name` o `workspace_names`, nunca los dos.** En `list_workspaces`, **los dos vacíos**.
 5. Si dejáis `workspace_name` **vacío** en `report` o `query`, se usa el **primer workspace de la
-   lista**. En las pruebas, **elegid siempre el nombre** en el desplegable.
+   lista**. En las pruebas, **escribid siempre el nombre** exacto que devuelve la prueba 1.
 
 ### Prueba 1 · Configuración (segundos, no llama a Azure)
 
@@ -466,18 +508,21 @@ Resultado esperado:
 > **1** botón **Test** · **2** «Function test succeeded» solo significa que el código se ejecutó ·
 > **3** el resultado real: `configuration_required`.
 
-### Prueba 2 · Permisos (1–3 min)
+### Prueba 2 · Permisos
 
 Es la que confirma que los **roles** de los 3 sitios (Azure, workspace, Unity Catalog) están bien.
+Puede acercarse al límite de ~100 s del playground: si da HTTP 504, hacedla desde el chat.
 
 | Parámetro | Valor |
 |---|---|
 | `operation` | **`query`** ← cambiar |
 | `view` | **`coverage`** ← cambiar |
-| `workspace_name` | **`<vuestro workspace>`** ← elegir |
-| resto | por defecto (`workspace_names` y `workload_name` vacíos; `all`; `25`; `0`) |
+| `workspace_name` | **`<vuestro workspace>`** ← escribir |
+| resto | los de la prueba 1: `workspace_names` y `workload_name` vacíos; `all`; `25`; `0` |
 
-Resultado esperado: `status: ok` y una fila por fuente con su estado. Cómo leerlo:
+Resultado esperado: `status: ok` y una fila por fuente con su estado. Cada respuesta trae solo unas
+pocas fuentes: si `next_offset` no es `null`, repetid con ese `offset`, o poned `status` = `denied`
+para ver solo las que fallan por permisos. Cómo leerlo:
 
 | Fuentes que empiezan por… | Si salen `denied` | Arreglo |
 |---|---|---|
@@ -491,60 +536,81 @@ Resultado esperado: `status: ok` y una fila por fuente con su estado. Cómo leer
 | `partial` | Leída en parte (ver motivo) |
 | `denied` | **Sin permiso** (o aún propagándose: esperad 10 min) |
 | `not_configured` | Desactivada en la configuración (p. ej. costes en `disabled`) |
-| `error` | Fallo de la fuente (ver mensaje) |
+| `error` | Fallo de la fuente (ver mensaje). `http_error` 404 en `arm_workspace` = nombre, grupo de recursos o suscripción del workspace mal escritos en `APPROVED_WORKSPACES` |
 
-### Prueba 3 · Informe completo (2–10 min)
+### Prueba 3 · Informe completo
+
+Si el playground da HTTP 504 (~100 s), hacedla desde el chat ([Paso 7](#paso-7--probar-en-un-chat-nuevo)),
+donde puede tardar unos minutos.
 
 | Parámetro | Valor |
 |---|---|
 | `operation` | `report` (el valor por defecto) |
-| `workspace_name` | **`<vuestro workspace>`** ← elegir |
-| resto | **todo por defecto** (regla 3) |
+| `workspace_name` | **`<vuestro workspace>`** ← escribir |
+| resto | **todo por defecto**, escrito en cada caja (regla 3) |
 
-Debe terminar con `status: ok`. Los 4 ficheros descargables se ven mejor desde el **chat**
+Debe terminar con `status: ok` o `partial` (`partial` = alguna fuente sin leer; los 4 ficheros se
+generan igual). Los 4 ficheros descargables se ven mejor desde el **chat**
 ([Paso 7](#paso-7--probar-en-un-chat-nuevo)).
 
 ### Errores del playground y cómo arreglarlos
 
 | Error que devuelve | Causa | Arreglo |
 |---|---|---|
+| `identity_mismatch` (en cuanto se lee Azure: `query`, `report`) | Se está usando un `.py` anterior al 16/11/2026 | Pegad el `.py` actual del repositorio ([Paso 3](#paso-3--crear-la-herramienta-python)) |
+| `http_error` con `http_status: 404` en `arm_workspace` | Nombre, grupo de recursos o suscripción del workspace mal escritos en `APPROVED_WORKSPACES` | Copiadlos exactos del portal de Azure ([Paso 2](#paso-2--configurar-el-py)) |
+| HTTP 504 a los ~100 s | Límite del playground, no de la herramienta | Lanzad la consulta o el informe desde el chat |
+| *Save* / *Create tool* en gris | Aún no se ha pulsado **Test** | Primero **Test**; si sigue en gris tras un Test correcto, rol **SRE Agent Administrator** |
 | `SyntaxError: invalid syntax` | Dos variables en la misma línea al pegar | Una variable por línea en el bloque CONFIGURACION |
+| `NameError: name 'CLIENT_LOGO_ALT' is not defined` | Al pegar se borró el tramo con `CLIENT_NAME` y el logo | Partid del `.py` del repositorio y pegad sin borrar ([Paso 2](#paso-2--configurar-el-py)) |
 | `configuration_required` | Quedan valores `<...>` o un valor mal escrito (`environment`, `workspace_host`…) | [Paso 2](#paso-2--configurar-el-py) |
 | `cross_tenant_configuration_required` | `SRE_TENANT_ID` y `TARGET_TENANT_ID` distintos | Poner **el mismo** tenant en los dos |
-| `invalid_parameter` … `must use its declared enum` | Un campo vacío o con valor no permitido; o `workspace_name` no está en el enum | Valor por defecto (regla 1); añadir el nombre al enum ([Paso 3](#paso-3--crear-la-herramienta-python)) |
-| `invalid_parameter` … `limit must be an integer` | `limit` vacío o con texto | `25` |
+| `invalid_parameter` … `must use its declared enum` | Valor mal escrito en `operation`, `view`, `classification`, `area`, `level`, `severity` o `status` | Escribid el valor exacto (regla 1) |
+| `invalid_parameter` … `workspace_name must exactly match the fixed operator allowlist` | El nombre no está en `APPROVED_WORKSPACES` | Copiadlo tal cual de la prueba 1 |
+| Error de tipo de la plataforma (`Parameter 'limit' expected <class 'int'>…`) | Texto en `limit` u `offset` | Son números: `25` y `0` |
+| `invalid_parameter` … `limit must be an integer from 1 to 100` | `limit` fuera de 1–100 | `25` |
 | `invalid_parameter` … `without spaces` | `workspace_names` con espacios o más de 5 | `ws-a,ws-b` sin espacios |
 | `invalid_combination` … `cannot be narrowed by query filters or paging` | En `report`/`list_workspaces` se cambió `view`, `area`, `limit`… | Todo por defecto salvo el nombre |
 | `invalid_combination` … `lists the complete fixed roster` | En `list_workspaces` se eligió un workspace | Vaciar `workspace_name` |
 | `invalid_combination` … `not both` | `workspace_name` y `workspace_names` a la vez | Usar solo uno |
 | Fuentes `denied` | Roles sin dar o propagándose | [Roles R1–R5](#-roles-y-permisos-quién-necesita-qué-leer-antes-de-empezar) |
+| `azure_cost` con HTTP 429 | Cost Management limita las peticiones seguidas | Esperad unos minutos y repetid |
+| Nombre de herramienta cortado (`generate-databricks-dependency-repor`) | *Tool Name* admite 36 caracteres | Recread la herramienta como `databricks-dependency-report`, o usad exactamente el nombre guardado en `SKILL.md`, instrucciones del subagente y *Choose tools* ([Paso 3](#paso-3--crear-la-herramienta-python)) |
 
 ---
 
 ## Paso 5 · Crear el skill
 
-**Builder → Agent Canvas → flecha de _Create_ → Skill**:
+**Build + configure → Agent Canvas → Create ▾ → Skill** → **Create skill**. El orden importa:
 
-- **Name:** `databricks-dependency-live`
-- **Contenido:** pegad [`skills/databricks-dependency-live/SKILL.md`](skills/databricks-dependency-live/SKILL.md).
-- **Tools:** **solo** `generate-databricks-dependency-report`.
+1. Pegad [`skills/databricks-dependency-live/SKILL.md`](skills/databricks-dependency-live/SKILL.md)
+   en el editor de la derecha (rellena *Name* `databricks-dependency-live` y *Description*).
+2. **Después**: **Choose tools** → buscad `databricks-dependency-report` → desplegad el grupo
+   **PythonFunctionTool (n)** → marcad solo esa herramienta (nunca la casilla del grupo) →
+   **Close panel**.
+3. Comprobad el chip y que el editor muestre `tools:` → **Create**.
+
+Si se elige la herramienta antes de pegar, al pegar el `SKILL.md` se sustituye la cabecera y la
+herramienta desaparece. **Tools:** **solo** `databricks-dependency-report`.
 
 ![Skill guardado](images/05-saved-runtime-skill.png)
 
-**1** nombre del skill · **2** única herramienta adjunta · **3** `SKILL.md` completo.
+**1** nombre del skill · **2** única herramienta adjunta · **3** `SKILL.md` completo. *(Captura de
+octubre: la herramienta se llamaba `generate-databricks-dependency-report`.)*
 
 ---
 
 ## Paso 6 · Crear el subagente
 
-**Builder → Agent Canvas → _Create_ (botón) → Custom Agent**:
+**Build + configure → Agent Canvas →** botón **Create** (abre directamente *Create a custom agent*):
 
-- **Name:** `databricks-dependency-live`
+- **Custom agent name:** `databricks-dependency-live`
 - **Instructions:** el bloque *Copy-ready instructions* de
   [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md).
-- **Tools:** **solo** `generate-databricks-dependency-report` (**no lo dejéis vacío**: vacío puede
-  heredar todas las herramientas globales).
-- **Skills:** **solo** `databricks-dependency-live`.
+- **Choose tools:** **solo** `databricks-dependency-report` (desplegad los grupos; **no lo dejéis
+  vacío**: vacío puede heredar todas las herramientas globales).
+- **Choose skills:** **solo** `databricks-dependency-live`.
+- No uséis *Refine with AI* ni *View AI suggestions*. Después, **Create**.
 
 ![Subagente guardado](images/06-saved-restricted-specialist.png)
 
@@ -555,13 +621,20 @@ Debe terminar con `status: ok`. Los 4 ficheros descargables se ven mejor desde e
 
 **1** skill seleccionado · **2** herramienta seleccionada · **3** *Save* deshabilitado = ya está
 guardado. (Los contadores globales de herramientas/skills que se ven arriba son del agente, no del
-subagente: lo que cuenta son los chips seleccionados.)
+subagente: lo que cuenta son los chips seleccionados. Hoy, en *Table view*, la columna *Tools* puede
+decir «Inherits 165 tools · 76 skills»: fiaos de los chips del formulario.)
+
+(Opcional) Comprobad en **Build + configure → Extensions → Tools** → pestaña *Custom tools* que la
+herramienta nueva sale **On / Allow**, y en **Extensions → Skills** → *Custom skills* que el skill
+sale **On**.
 
 ---
 
 ## Paso 7 · Probar en un chat nuevo
 
-1. **New chat** → escribid `/agent` → elegid **`databricks-dependency-live`**.
+1. **New chat** → escribid `/agent` → elegid **`databricks-dependency-live`** → comprobad el chip
+   **Agent: databricks-dependency-live** → pegad el prompt. (Escribir `@` ya no abre selector, y
+   `/databricks-dependency-live` bajo *SKILLS* invoca el skill, no el subagente.)
 
    ![Elegir el subagente](images/10-select-registered-specialist.png)
 
@@ -570,13 +643,13 @@ subagente: lo que cuenta son los chips seleccionados.)
 2. Primero la lista:
 
    ```text
-   @databricks-dependency-live Lista los workspaces aprobados con operation=list_workspaces.
+   Lista los workspaces aprobados con operation=list_workspaces.
    ```
 
 3. Después el informe:
 
    ```text
-   @databricks-dependency-live Genera el informe completo de dependencias y configuración de Databricks para <workspace> con operation=report.
+   Genera el informe completo de dependencias y configuración de Databricks para <workspace> con operation=report.
    ```
 
    ![Chat con los 4 ficheros](images/12-live-chat-four-files.png)
@@ -586,13 +659,14 @@ subagente: lo que cuenta son los chips seleccionados.)
 
 Más prompts (dependencias, Unity Catalog, FinOps, cobertura), en castellano e inglés, en
 [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md) y al final del
-[README técnico](README-tecnico-EN.md#copy-ready-bilingual-qa-prompt-pack-castellano--english):
+[README técnico](README-tecnico-EN.md#copy-ready-bilingual-qa-prompt-pack-castellano--english),
+siempre con el subagente elegido con **/agent**:
 
 ```text
-@databricks-dependency-live Usa query/dependencies con classification=UNKNOWN para <workspace>. ¿Qué puntos ciegos hay?
-@databricks-dependency-live Usa query/findings con area=security y status=failed para <workspace>.
-@databricks-dependency-live Usa query/unity_catalog para <workspace>. Resume catálogos, esquemas y external locations.
-@databricks-dependency-live Usa query/coverage para <workspace>. ¿Qué fuentes fallaron y por qué?
+Usa query/dependencies con classification=UNKNOWN para <workspace>. ¿Qué puntos ciegos hay?
+Usa query/findings con area=security y status=failed para <workspace>.
+Usa query/unity_catalog para <workspace>. Resume catálogos, esquemas y external locations.
+Usa query/coverage para <workspace>. ¿Qué fuentes fallaron y por qué?
 ```
 
 ---
@@ -605,7 +679,7 @@ Más prompts (dependencias, Unity Catalog, FinOps, cobertura), en castellano e i
 | ☐ | El script termina con `[OK]` en las 3 partes (o se hizo a mano) | PowerShell |
 | ☐ | Prueba 1: `list_workspaces` → `status: ok` y vuestros workspaces | Test playground |
 | ☐ | Prueba 2: `query/coverage` → fuentes `arm_`, `dbx_` y `uc_` en `complete` | Test playground |
-| ☐ | Prueba 3: `report` → `status: ok` | Test playground |
+| ☐ | Prueba 3: `report` → `status: ok` o `partial` (o desde el chat si el playground da 504) | Test playground |
 | ☐ | Chat: el subagente entrega los **4 ficheros** | Chat |
 | ☐ | El HTML abre en el navegador y muestra el mapa de dependencias | Navegador |
 | ☐ | Anotad dudas o hallazgos para la siguiente sesión | — |
@@ -642,15 +716,22 @@ El subagente entrega **4 ficheros descargables**:
 
 | Síntoma | Causa | Solución |
 |---|---|---|
+| `identity_mismatch` en cuanto se lee Azure | Se está usando un `.py` anterior al 16/11/2026 | Pegad el `.py` actual del repositorio ([Paso 3](#paso-3--crear-la-herramienta-python)) |
+| `http_error` 404 en `arm_workspace` | Nombre, grupo de recursos o suscripción del workspace mal escritos en `APPROVED_WORKSPACES` | Revisad `APPROVED_WORKSPACES` y `SUBSCRIPTION_ID` ([Paso 2](#paso-2--configurar-el-py)) |
 | `SyntaxError: invalid syntax` | Dos variables en la misma línea | Una variable por línea |
+| `NameError: name 'CLIENT_LOGO_ALT' is not defined` | Al pegar se borró el tramo con `CLIENT_NAME` y el logo | Partid del `.py` del repositorio y pegad sin borrar ([Paso 2](#paso-2--configurar-el-py)) |
 | `configuration_required` | Valores `<...>` o un valor mal escrito | [Paso 2](#paso-2--configurar-el-py) |
-| `invalid_parameter` con el nombre del workspace | No está en el enum de `workspace_name` o no coincide con `APPROVED_WORKSPACES` | [Paso 3](#paso-3--crear-la-herramienta-python), punto 4 |
+| `workspace_name must exactly match the fixed operator allowlist` | El nombre no está en `APPROVED_WORKSPACES` | Copiadlo tal cual de la prueba 1, o corregid `APPROVED_WORKSPACES` ([Paso 2](#paso-2--configurar-el-py)) |
+| HTTP 504 en *Test playground* (~100 s) | Límite del playground, no de la herramienta | Lanzad el informe desde el chat |
 | Fuentes `arm_…` en `denied` | Falta Reader o propagación | Persona 1; esperar 10 min |
 | Fuentes `dbx_…` en `denied` | Service principal no añadido o sin `CAN_VIEW` | Persona 2 |
 | Fuentes `uc_…` en `denied` | Sin `BROWSE`/`USE_CATALOG`/`USE_SCHEMA` | Persona 3 |
+| `azure_cost` con HTTP 429 | Cost Management limita las peticiones seguidas | Esperad unos minutos y repetid |
 | Jobs nuevos sin evaluar | Se crearon después del script | Volver a ejecutar el script |
 | Sin costes | `cost_scope` en `disabled` | [Opcional: costes](#opcional-costes-finops) |
-| El subagente usa otras herramientas | Lista de tools vacía | Seleccionar solo `generate-databricks-dependency-report` |
+| *Save* / *Create tool* en gris | Aún no se ha pulsado **Test** en el playground | Primero **Test**; si sigue en gris tras un Test correcto, rol **SRE Agent Administrator** |
+| Nombre de herramienta cortado (`generate-databricks-dependency-repor`) | *Tool Name* admite 36 caracteres | Recread la herramienta como `databricks-dependency-report`, o usad exactamente el nombre guardado en `SKILL.md`, instrucciones del subagente y *Choose tools* |
+| El subagente usa otras herramientas | Lista de tools vacía | Seleccionar solo `databricks-dependency-report` |
 
 ---
 
@@ -660,8 +741,8 @@ El subagente entrega **4 ficheros descargables**:
 |---|---|
 | [`grant-databricks-permissions.ps1`](grant-databricks-permissions.ps1) | Permisos de solo lectura (Azure + workspace + Unity Catalog) y bloque de configuración |
 | [`generate-databricks-dependency-report.py`](generate-databricks-dependency-report.py) | Herramienta Python (editar solo el bloque CONFIGURACION) |
-| [`requirements.txt`](requirements.txt) | Paquetes Python de la herramienta |
-| [`tool-parameters.schema.json`](tool-parameters.schema.json) | Los 12 parámetros |
+| [`requirements.txt`](requirements.txt) | Paquetes Python de la herramienta (informativo: el entorno del SRE Agent ya los trae) |
+| [`tool-parameters.schema.json`](tool-parameters.schema.json) | Los 12 parámetros (referencia; el portal los saca de `def main(...)`) |
 | [`skills/databricks-dependency-live/SKILL.md`](skills/databricks-dependency-live/SKILL.md) | Skill |
 | [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md) | Instrucciones del subagente y prompts |
 | [`README-tecnico-EN.md`](README-tecnico-EN.md) | Documentación técnica completa (inglés), incluido el modo *cross-tenant* |

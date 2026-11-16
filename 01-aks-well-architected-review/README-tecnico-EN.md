@@ -2,6 +2,28 @@
 
 > **Azure SRE Agent** · Read-only Python tool · Runtime skill · Restricted specialist · Offline HTML, full JSON and CSV
 
+> [!IMPORTANT]
+> **Update 16/11/2026 — read first** (Spanish summary: [`LEEME-PRIMERO.md`](../LEEME-PRIMERO.md#-actualización-16112026--leed-esto-primero)).
+> - **Paste the current `generate-aks-waf-report.py` again.** Since early November 2026 the SRE Agent
+>   sandbox issues sidecar tokens with `tid`/`clientId`/`scp` instead of `aud`/`appid`; code copied
+>   before 16/11/2026 fails every Azure read with `identity_mismatch`. The current file adds
+>   `normalize_sidecar_claims`, which keeps the tenant, client and audience checks.
+> - **Portal changes since the October captures:** *Builder* is now **Build + configure → Agent
+>   Canvas**; the agent menu has no *Settings* (take the Client ID from the current tool code,
+>   `MANAGED_IDENTITY_CLIENT_ID`, or from the Azure portal: agent resource group → managed identity
+>   `id-…` → **Overview → Client ID**); the Python tool dialog has three tabs (*Code / Test playground /
+>   Identity*), **no Requirements field** and **no parameter/enum editor** (the 12 inputs are detected
+>   from `def main(...)`); the Test playground boxes start **empty**; **Save / Create tool** stay
+>   disabled until **Test** has run; in a skill, paste `SKILL.md` first and then use **Choose tools**;
+>   in chat, select the specialist with **/agent** (typing `@` no longer opens a picker).
+> - **Kubernetes today:** Python tools in the SRE Agent cannot reach the AKS Kubernetes API (every
+>   `kube_*` source returns HTTP 502 from the platform egress). It is not a permission or
+>   cluster-configuration problem, and enabling Entra ID + Azure RBAC does not fix it. Set
+>   `"kubernetes_enabled": False` in `CLUSTER_DEFAULTS`: same result, ~15 s per cluster instead of
+>   ~85 s, and batches of five fit the 240-second collection budget (keep batches of two otherwise).
+> - **Test playground limit:** the test request is cut at ~100 s with HTTP 504 even with Timeout 900;
+>   run long reports from chat.
+
 Turn a fixed, approved AKS scope into a dated review of **best practices,
 security, FinOps and optimization**. Start with the executive reading, follow a
 namespace or workload into its evidence, inspect confirmed resource
@@ -136,8 +158,8 @@ placeholders, not LAB or another customer's values, in reusable instructions.
 | Stage | Your guided action | What you should see before proceeding |
 |---|---|---|
 | Watch the demonstration | Walk through [Step 6](#step-6---read-and-explore-the-html-report) and the [scope matrix](#customer-scope-coverage-and-checklist-limits) with the customer. | Four real files, dated source receipts and separate score/coverage. The demonstrated 19 Kubernetes 502s and stopped second cluster remain limitations, not a completed customer workload review. |
-| Configure your own approved scope | Download the actual [standalone tool](generate-aks-waf-report.py), [schema](tool-parameters.schema.json), [requirements](requirements.txt), [runtime skill](skills/aks-waf-live/SKILL.md) and [specialist instructions](subagent-instructions-and-prompts.md). Complete Steps 0-1 privately. | Valid Python/JSON/Markdown downloads, not GitHub sign-in HTML; confirmed IDs/permissions, matching code/schema cluster allowlists and authorized branding only. No collector edits or rebuild are needed for customer configuration. |
-| Create and read back the components | Follow the actual portal steps in [Step 2](#step-2---create-the-python-tool-and-verify-its-inputs), [Step 3](#step-3---create-the-runtime-skill) and [Step 4](#step-4---create-the-restricted-specialist). Use all [12 current typed inputs](#verify-the-current-typed-schema), not an old screenshot's 11. | Saved whole-file code, correct defaults/enums/bounds and the documented identity design; then exactly one tool and one skill on the specialist. A filled but unsaved form is not deployment. |
+| Configure your own approved scope | Download the actual [standalone tool](generate-aks-waf-report.py), [schema](tool-parameters.schema.json), [requirements](requirements.txt), [runtime skill](skills/aks-waf-live/SKILL.md) and [specialist instructions](subagent-instructions-and-prompts.md). Complete Steps 0-1 privately. | Valid Python/JSON/Markdown downloads, not GitHub sign-in HTML; confirmed IDs/permissions, the code's cluster allowlist and authorized branding only. No collector edits or rebuild are needed for customer configuration. |
+| Create and read back the components | Follow the actual portal steps in [Step 2](#step-2---create-the-python-tool-and-verify-its-inputs), [Step 3](#step-3---create-the-runtime-skill) and [Step 4](#step-4---create-the-restricted-specialist). Use all [12 current typed inputs](#verify-the-current-typed-schema), not an old screenshot's 11. | Saved whole-file code, the 12 inputs detected from `def main(...)` and the documented identity design; then exactly one tool and one skill on the specialist. A filled but unsaved form is not deployment. |
 | Accept your first customer run | In normal chat, explicitly select the specialist and follow [Step 5](#step-5---run-one-report-in-normal-chat-and-download-its-files), then inspect each selected cluster as in Step 6. | Four actual downloads for the requested scope and matching run references. `No evaluado` means evidence/applicability is missing, not passed; an empty workload table after failed GETs means unknown, not no workloads. Use [Troubleshooting](#troubleshooting) without broadening access or starting a stopped cluster. |
 | Decide on repetition later | Only after acceptance and a separate customer request, use [Step 7](#step-7---keep-reporting-cadence-optional). | Approved owner/scope/cadence/cost and an actual saved/read-back task plus any separately authorized run receipt; no schedule is required for an on-demand implementation. |
 
@@ -274,7 +296,7 @@ so you do not have to scroll back here.
 |---|---|
 | [`generate-aks-waf-report.py`](generate-aks-waf-report.py) | Canonical **whole-file paste** into the Python tool; configure only a private copy |
 | [`tool-parameters.schema.json`](tool-parameters.schema.json) | Exact typed inputs, defaults, enums, bounds and mutually exclusive selectors |
-| [`requirements.txt`](requirements.txt) | Declared runtime dependencies; optional Pillow is needed only for a configured raster logo |
+| [`requirements.txt`](requirements.txt) | Declared runtime dependencies (informative: the portal has no Requirements field and the SRE Agent runtime already includes them); Pillow validates a configured raster logo |
 | [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md) | Separate SRE runtime skill, not the repository's authoring skill |
 | [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md) | Restricted specialist instructions and copy-ready report/query prompts |
 | [`report_template.html`](https://github.com/marioaguileraaa/sre-agent-use-cases/blob/main/04-aks-well-architected-review/report_template.html) | Development source for the offline UI; **do not paste it as a Python tool** |
@@ -282,10 +304,11 @@ so you do not have to scroll back here.
 
 ## Step 0 - Identify the reporting identity and approve scope
 
-1. In [Azure SRE Agent](https://sre.azure.com), open the approved agent. Open
-   **Settings > Azure settings > Managed Identity > Go to Identity**, or find
-   the attached user-assigned identity in the agent's Azure resource group.
-   Older **Settings > Basics** screenshots are historical label variants.
+1. In [Azure SRE Agent](https://sre.azure.com), open the approved agent. The agent menu no longer
+   has **Settings** (older **Settings > Azure settings > Managed Identity** and **Settings > Basics**
+   screenshots are historical label variants). Copy the Client ID from the current tool code
+   (`MANAGED_IDENTITY_CLIENT_ID = "…"`) or find the attached user-assigned identity (`id-…`) in the
+   agent's Azure resource group.
 2. On the identity's Azure portal **Overview**, copy **Client ID**. Do not copy
    **Object (principal) ID** into code: they are different GUIDs. Record the
    principal separately for source RBAC checks, and do not select the internal
@@ -450,24 +473,33 @@ and resource-group placeholders, set `environment` only to confirmed `LAB`,
 `PRODUCTION` or `UNSPECIFIED`, and keep boolean source flags deliberate.
 `CLIENT_NAME` is 1..120 plain characters. The fixed global identity/tenant/
 subscription and each approved cluster/resource ID are not chat overrides.
-For a handful of clusters you may privately set `cluster_name.enum` in the
-linked schema to `""` plus the **same exact approved names** as
-`APPROVED_CLUSTERS`; for a large fleet keep it as the shipped free string with
-pattern (the code still rejects any name outside the allowlist). Preserve all
-other types/defaults/bounds. There is no `period` or arbitrary snapshot-path input.
+The linked schema is a reference: today's portal has **no parameter/enum
+editor** and detects the 12 inputs from `def main(...)` when the code is pasted,
+so `cluster_name` and `cluster_names` are free strings and the code itself
+rejects any name outside the allowlist. A private `cluster_name.enum` in the
+schema copy (`""` plus the **same exact approved names** as `APPROVED_CLUSTERS`)
+is documentation only. There is no `period` or arbitrary snapshot-path input.
+
+**Portal today:** in `CLUSTER_DEFAULTS`, set `"kubernetes_enabled": False` while
+the platform returns HTTP 502 for every `kube_*` read (see the update note at
+the top).
 
 ![Actual Builder preview of operation, view and exact masked cluster choice](images/aks04-step01-cluster-choice.png)
 
 **1** opens the real Test playground; **2** is `report`, **3** is `summary`,
 and **4** is the exact fixed cluster name, privacy-masked in the image. This
 is an **unsaved preview of the verified 11-input deployment baseline**, not a
-new execution or proof of the newer multi-cluster deployment.
+new execution or proof of the newer multi-cluster deployment. *(October
+capture: today the Test playground boxes start empty, with no drop-down; type
+every value.)*
 
-**Checkpoint:** the code and the schema contain the **same fixed allowlist**.
-Unreplaced placeholders must fail before authentication.
+**Checkpoint:** the code contains the fixed allowlist (`list_clusters` returns
+it). Unreplaced placeholders must fail before authentication.
 
 ### Side-by-side synchronization example (structural only — NOT paste-ready)
 
+*Reference only:* the portal no longer reads a parameter schema or enum, so
+this private schema copy is documentation; the code enforces the allowlist.
 Whenever you configure `APPROVED_CLUSTERS` in your private copy of
 `generate-aks-waf-report.py`, update `properties.cluster_name.enum` in your
 private copy of `tool-parameters.schema.json` to contain `""` followed by the
@@ -503,12 +535,23 @@ APPROVED_CLUSTERS = {
 
 - `grant-aks-permissions.ps1 -ManagementGroupId <mg>` (or `-AllSubscriptions` /
   `-SubscriptionIds a,b,c`) assigns the read roles once per scope, enumerates
-  every AKS and writes this block to `approved-clusters.generated.py`.
-- Remove any `cluster_name` enum in the portal for large fleets.
+  every AKS and writes this block to `approved-clusters.generated.py`. Paste it
+  just above the `# ====…` line that closes the configuration block (line 313),
+  without deleting anything: Python keeps the last definition. Deleting the whole
+  range between `SUBSCRIPTION_ID` and `APPROVED_CLUSTERS` removes `CLIENT_NAME`
+  and the logo and fails with `NameError: name 'CLIENT_LOGO_ALT' is not defined`.
+- `cluster_name` has no enum in today's portal (inputs are detected from
+  `def main(...)`), which is what a large fleet needs.
 - `list_clusters` is paged: `{"operation":"list_clusters","limit":100,"offset":0}`
-  returns `total`, `subscription_count`, `returned` and `next_offset`.
+  returns `total`, `subscription_count`, `returned` and `next_offset`. The
+  response is size-capped, so `returned` can be lower than `limit` (about 18
+  per page with typical names); follow `next_offset` until it is null. With more
+  than five clusters, rows omit `cluster_id`.
 - A report still covers at most five clusters (`cluster_names`); the skill
   reviews a fleet in batches of five and then summarizes per subscription.
+  Batches of five fit the 240-second collection budget with
+  `"kubernetes_enabled": False`; keep batches of two if Kubernetes collection
+  stays enabled (~85 s per running cluster while `kube_*` reads return 502).
 - Every collection reads only the selected cluster's own subscription; a
   reference into another subscription is skipped, never followed.
 
@@ -539,16 +582,17 @@ source dates or file-delivery contract to add branding.
 **Download here:** [`generate-aks-waf-report.py`](generate-aks-waf-report.py),
 [`tool-parameters.schema.json`](tool-parameters.schema.json).
 
-1. Open **Builder > Agent Canvas**.
-2. Open the arrow beside **Create**, then **Tool > Python tool**.
-3. Select **Code**. Set the tool name to **`generate-aks-waf-report`**, enter a
-   clear read-only description and paste the **entire privately configured
-   canonical Python file**. Do not select Generate, paste a fragment, or paste
-   unbuilt `engine.py`.
-4. Use the approved timeout. The verified deployment used **900 seconds**;
-   the collector's separate shared budget bounds new reads to 240 seconds /
-   300 HTTP attempts across selected clusters, with a bounded in-flight read
-   allowed to finish.
+1. Open **Build + configure > Agent Canvas** (formerly *Builder*).
+2. Open **Create ▾** (the arrow beside **Create**), then **Tool › Python tool**.
+3. The dialog has three tabs: *Code / Test playground / Identity*. In **Code**,
+   set **Tool Name** to **`generate-aks-waf-report`** (the field accepts at most
+   36 characters), enter a clear read-only description and paste the **entire
+   privately configured canonical Python file**. Do not select Generate, paste a
+   fragment, or paste unbuilt `engine.py`.
+4. Set **Timeout (seconds)** to **900** (default 120, maximum 900); the verified
+   deployment used 900 seconds. The collector's separate shared budget bounds
+   new reads to 240 seconds / 300 HTTP attempts across selected clusters, with a
+   bounded in-flight read allowed to finish.
 
 Copy-ready **Description**:
 
@@ -559,9 +603,11 @@ and optional ActualCost evidence; return offline HTML, complete JSON,
 failed-findings CSV and inventory CSV, or bounded typed queries. No remediation.
 ```
 
-Ensure the approved runtime supplies
-[`requirements.txt`](requirements.txt): **`azure-identity>=1.19,<2`**,
-**`PyYAML>=6.0.2,<7`**, and **`Pillow>=12.2,<13`** only when a logo is configured.
+The dialog has **no Requirements field**: the SRE Agent Python runtime already
+includes the packages declared in [`requirements.txt`](requirements.txt)
+(**`azure-identity>=1.19,<2`**, **`PyYAML>=6.0.2,<7`** and **`Pillow>=12.2`**,
+the latter used to validate a configured logo; checked on 16/11/2026), so the
+file is informative.
 HTTP/TLS uses Python's standard library. The reporting tool does not require
 your local Azure CLI/kubectl login or an operator kubeconfig file, and it has
 no fallback to those identities. Do not add a package-install/shell tool to
@@ -571,6 +617,7 @@ the specialist to solve a runtime import error.
 
 **1-2** identify Builder and Agent Canvas; **3** is the Create arrow and
 **4** the Python tool entry. This is the real portal, not a recreated diagram.
+*(October capture: the menu is now **Build + configure**.)*
 
 ![Actual Code tab with private configured source obscured](images/aks04-step02-02-code.png)
 
@@ -601,9 +648,10 @@ not inferred from an older screenshot.
 | `offset` | `integer` (schema), `int` (Python) / `0` | 0..500000 within this fresh collection, not a persistent cursor |
 
 **Editor type mapping:** keep standard JSON Schema **`integer`** in the file.
-In a row-based SRE parameter editor that uses Python/runtime type labels,
-select **`int`** for `limit` and `offset`. Supply numeric JSON values such as
-`25` and `0`, not quoted strings; do not rewrite the schema type to `int`.
+Today's portal has no row-based parameter editor: it reads the inputs and
+their types from `def main(...)` (`limit: int`, `offset: int`). Supply numeric
+values such as `25` and `0`, not text; text in those boxes fails with a
+platform type error before the tool runs.
 
 Do not supply both selectors. For `report`, leave `view=summary`, filters empty/
 `all`, `limit=25`, `offset=0`; otherwise the report is rejected instead of
@@ -621,6 +669,8 @@ cursor into the last downloaded report. A filtered page is not its exact total.
 **1** shows `status=all`; **2-3** show integer paging defaults **25 / 0**.
 This real 11-input preview was not run. Use the linked current schema for all
 12 inputs, exact enums, defaults and bounds; read them back after saving.
+*(October capture: today the 12 Test playground boxes start empty; type every
+value.)*
 
 ### Identity tab: preserve the actual authentication design
 
@@ -636,30 +686,46 @@ an Azure CLI login or an alternate-identity fallback.
 Key Vault/Storage/token presets simply to resemble another case. Step 0's
 four read boundaries still require explicit approval and verification.
 
-5. In Test playground, enter an explicit approved cluster and report defaults.
-   An authorized operator tests the code before creation. If a source fails,
-   inspect the sanitized error and its **No evaluado** result; do not broaden
-   access or fabricate a smaller successful scope.
-6. Select **Create tool** only after the approved test. Reopen/read back the
-   saved source hash, parameter definitions, identity setting and timeout.
+> [!WARNING]
+> Do not switch **Enable Azure Identity** on, even briefly: the portal inserts
+> four lines at the top of the code (`# Azure Identity Authentication`,
+> `from azure.identity import DefaultAzureCredential`,
+> `credential = DefaultAzureCredential()`, `AZURE_ARM_TOKEN = …`) that stay
+> after you switch it off again. If that happens, delete them in **Code**.
+
+5. In the **Test playground** tab of the tool dialog (not the *Test playground*
+   view of the Agent Canvas toolbar), select **Test** and type all 12 values:
+   the boxes start empty, with no defaults or drop-downs. Enter an explicit
+   approved cluster and the report defaults. The test request is cut at
+   ~100 s with HTTP 504 even with Timeout 900; with `kubernetes_enabled: False`
+   a report takes ~15 s per cluster, otherwise run it from chat. An authorized
+   operator tests the code before creation. If a source fails, inspect the
+   sanitized error and its **No evaluado** result; do not broaden access or
+   fabricate a smaller successful scope.
+6. Select **Create tool** only after the approved test (**Create tool** / **Save**
+   stay disabled until **Test** has run; that is not a missing role). Reopen/read
+   back the saved source hash, parameter definitions, identity setting and timeout.
 
 **Checkpoint:** the saved tool is Python, its code matches the configured
-whole-file hash, and every current input/default/enum/bound is correct. Merely
-opening or filling a Builder dialog is not deployment evidence.
+whole-file hash, and the 12 inputs detected from `def main(...)` are present.
+Merely opening or filling a Builder dialog is not deployment evidence.
 
 ## Step 3 - Create the runtime skill
 
 **Download here:** [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md).
 
-1. In **Builder > Agent Canvas**, select **Create > Skill**.
+1. In **Build + configure > Agent Canvas**, select **Create ▾ > Skill** (or,
+   for the existing skill, **Table view > Skills > `aks-waf-live` > pencil**).
 2. Use the name **`aks-waf-live`**.
-3. Use a description such as `Read-only AKS evidence review for the fixed
-   approved cluster scope; preserve source coverage and deliver actual files.`
-   Copy/upload the complete runtime `SKILL.md` into the skill body. Preserve
-   portal-generated name/description/tool front matter if present, replacing
-   its body placeholder with the reviewed content.
-4. Attach **only `generate-aks-waf-report`**, save through the approved process
-   and reopen the skill.
+3. Paste the complete runtime `SKILL.md` into the editor **first**: its front
+   matter fills *Name* and *Description* (for example `Read-only AKS evidence
+   review for the fixed approved cluster scope; preserve source coverage and
+   deliver actual files.`). Pasting the full file replaces the front matter, so
+   a tool chosen before pasting is dropped.
+4. **Then** select **Choose tools**, search `generate-aks-waf-report`, expand the
+   **PythonFunctionTool (n)** group and tick **only** that tool (never the group
+   checkbox), select **Close panel**, check the tool chip and that the editor
+   shows `tools:`, and save through the approved process. Reopen the skill.
 5. Confirm both its actual file and attached tool.
 
 ![Actual saved runtime skill, attached tool and SKILL.md](images/aks04-step03-skill-readback.png)
@@ -680,9 +746,13 @@ one attached tool. It cannot grant roles, run shell commands or remediate.
 **Download here:** [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md)
 and [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md).
 
-1. In **Builder > Agent Canvas**, select **Create > Custom Agent**.
+1. In **Build + configure > Agent Canvas**, select the **Create** button (it
+   opens *Create a custom agent*; **Create ▾ > Custom Agent** also works). For
+   the existing specialist use **Table view > Sub Agents > `aks-waf-live` >
+   pencil** (*Edit custom agent*, tabs *Form / YAML*).
 2. Name it **`aks-waf-live`** and copy the complete restricted instructions.
-3. In **Choose tools**, select **exactly one**:
+   Do not use *Refine with AI* or *View AI suggestions*.
+3. In **Choose tools** (expand the groups), select **exactly one**:
    `generate-aks-waf-report`. Do not leave the picker empty: an empty selection
    can inherit global tools.
 4. Enable skills and allow **only `aks-waf-live`**. Do not add system skills,
@@ -702,16 +772,17 @@ remediation authority. The HTML reference design does not give it deployment
 permission.
 
 > [!NOTE]
-> **Dated SRE UI badge caveat:** While the captured detail panel above shows `Tools · 1`, the live Agent Canvas list/card summary badges can display inherited global rollups (for example, `131 tools` / `52 skills`) even when both native APIs, selected chips and the saved form policy enforce one explicit tool and skill (`tools`, `allowedSkills`, `addSystemSkills=false`, `disableDocumentRetrieval=true`). Always verify the exact selected tool and skill **names** in the saved form and effective supported policy; the list summary badge is not authoritative restriction proof, and you must not modify globals to change it.
+> **Dated SRE UI badge caveat:** While the captured detail panel above shows `Tools · 1`, the live Agent Canvas list/card summary badges can display inherited global rollups (for example, `131 tools` / `52 skills`; today *Table view* may show `Inherits 165 tools · 76 skills`) even when both native APIs, selected chips and the saved form policy enforce one explicit tool and skill (`tools`, `allowedSkills`, `addSystemSkills=false`, `disableDocumentRetrieval=true`). Always verify the exact selected tool and skill **names** in the saved form and effective supported policy; the list summary badge is not authoritative restriction proof, and you must not modify globals to change it.
 
 ## Step 5 - Run one report in normal chat and download its files
 
 **Copy-ready prompts here:** [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md).
 
 1. Open **New chat** in the approved SRE Agent.
-2. Type **`/agent`** and select **`aks-waf-live`**. The deployment baseline also
-   used the named specialist via `@aks-waf-live`; confirm the selected agent in
-   your portal version rather than assuming a plain mention selects it.
+2. Type **`/agent`**, select **`aks-waf-live`** and check the **Agent:
+   aks-waf-live** chip before pasting a prompt. Typing `@` no longer opens a
+   picker (the deployment baseline used `@aks-waf-live`), and `/aks-waf-live`
+   listed under *SKILLS* invokes the skill, not the specialist.
 3. Ask for the fixed roster first when needed:
 
    ```json
@@ -787,12 +858,13 @@ merely to discover totals already returned. No follow-up is hidden inside the
 report call or its scheduled run.
 
 Spanish (ES) copy-ready equivalents for the normal-chat report and coverage
-follow-up above (matching [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md)):
+follow-up above (matching [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md);
+paste them with `aks-waf-live` selected via **/agent**):
 
 - **Single-cluster full report (ES):**
 
 ```text
-@aks-waf-live Genera la revision de configuracion de AKS para
+Genera la revision de configuracion de AKS para
 <APPROVED_AKS_NAME> con operation=report. Cubre cluster, workloads y recursos
 asociados: buenas practicas, seguridad, FinOps y optimizacion, con los cinco
 pilares WAF. Entrega HTML, JSON completo, CSV de hallazgos y CSV de inventario.
@@ -802,7 +874,7 @@ Muestra cobertura, fuentes, No evaluado/No aplica y limites. No cambies nada.
 - **Source coverage follow-up (ES):**
 
 ```text
-@aks-waf-live Usa query/coverage para <APPROVED_AKS_NAME>. Que fuentes
+Usa query/coverage para <APPROVED_AKS_NAME>. Que fuentes
 fallaron o fueron parciales, con que codigo HTTP y que campos no podemos
 evaluar? Un 502/429 no es permiso denegado, y un 403 no significa cero objetos.
 ```
@@ -938,8 +1010,8 @@ Only after an explicit customer request and an accepted ordinary-chat run:
 1. Search **Automation** for a matching **customer-owned** task. Inspect its
    owner, approved fixed scope, responder, prompt and cadence; reuse an
    approved match rather than duplicate it or modify another owner's task.
-   To create a new one, open **Automation > Create > Scheduled task**, or
-   **Builder > Agent Canvas > Create > Trigger > Scheduled tasks**.
+   To create a new one, open **Automation > Create ▾ > Scheduled task**, or
+   **Build + configure > Agent Canvas > Create ▾ > Trigger › Scheduled tasks**.
 2. Choose `aks-waf-live` as the response specialist and specify the approved
    cadence/time zone and exact fixed cluster selection.
 3. Use a prompt for **one complete report call** and immediate four-file
@@ -960,11 +1032,12 @@ snapshot**, the following is a complete proposed template to approve:
 |---|---|
 | Task name | `Monthly AKS configuration review` |
 | Response custom agent | `aks-waf-live` |
-| Frequency / cron | **Custom cron (UTC)** / `0 9 1 * *` = first day at 09:00 UTC, only if chosen |
+| Frequency / cron | **Custom cron (UTC)** / `0 9 1 * *` = first day at 09:00 UTC, only if chosen (*Frequency* starts at *Daily*; switch it to *Custom cron*) |
 | Scope | One exact fixed `cluster_name`, or the distinct approved comma-separated `cluster_names`; never both |
 | Evidence meaning | Configuration/current Kubernetes samples at execution time, plus the **privately configured** billing timeframe; not a previous-month telemetry report |
-| Start on / model tier | Customer-approved activation date and usage policy |
-| Run mode / thread | Autonomous only for approved unattended read-only execution; Review can pause. Use a separate execution thread where offered. |
+| Start on / model tier | Customer-approved activation date and usage policy; *Model tier* offers four options (*General Purpose* by default, *Reasoning*, *Fast Reasoning*, *Fast*) |
+| Repeat until / run limit | Optional fields **Repeat until** and **Set a run limit**; leave empty unless the customer approves an end date or a maximum number of runs |
+| Run mode / thread | Autonomous only for approved unattended read-only execution; Review can pause. For one thread per run, set **Message grouping for updates** to **New chat thread for each run**. |
 
 Replace `<APPROVED_AKS_NAME>` with the actual fixed approved name before
 saving **Task details**:
@@ -1016,6 +1089,9 @@ New-cloud captures remain **Not collected** until that deployment happens.
 
 | Symptom | What to do honestly |
 |---|---|
+| `identity_mismatch` on the first Azure read | The pasted code predates 16/11/2026 (sidecar token claims). Paste the current `generate-aks-waf-report.py` again |
+| HTTP 504 in the Test playground after ~100 s | Playground request limit, not the tool's Timeout. Set `"kubernetes_enabled": False` (~15 s per cluster) or run the report from chat |
+| **Save** / **Create tool** disabled | Run **Test** in the Test playground tab first; if still disabled after a successful test, check the SRE Agent Administrator role |
 | `configuration_required` | Correct fixed private constants before authentication; no alternate identity |
 | Wrong cluster / selector rejected | Match the private code/schema allowlist exactly; use one selector only and no spaces in `cluster_names`. Empty selects the first configured cluster, not all clusters. |
 | Human Builder/chat denied | Verify Author + Standard User (or Administrator) on the SRE Agent resource; do not self-grant based on a warning |
@@ -1023,8 +1099,8 @@ New-cloud captures remain **Not collected** until that deployment happens.
 | `invalid_combination` / wrong type | Use query-only filters only with compatible views/statuses; leave report defaults untouched. Namespace filtering does not change server-side data-read scope. |
 | clusterUser HTTP 403 | Ask the authorized operator to verify the exact minimal approved permission; never use admin kubeconfig |
 | A Kubernetes kind HTTP 403 | Preserve that blind spot; AKS RBAC Reader can exclude cluster-scoped kinds |
-| Kubernetes HTTP 502 / TLS / timeout | Inspect approved reachability, source and peer/FQDN validation; no insecure/proxy/endpoint workaround |
-| Cost HTTP 429 | Bounded retries, then the actual error / No evaluado; no zero cost or savings |
+| Kubernetes HTTP 502 / TLS / timeout | Today (16/11/2026) every `kube_*` read from SRE Agent Python tools returns HTTP 502 from the platform egress: not a permission or cluster-configuration problem, and enabling Entra ID + Azure RBAC does not fix it. Set `"kubernetes_enabled": False` (same result, no retries). Otherwise inspect approved reachability, source and peer/FQDN validation; no insecure/proxy/endpoint workaround |
+| Cost HTTP 429 | Cost Management throttling after several reports in a row: wait a few minutes and retry. Bounded retries, then the actual error / No evaluado; no zero cost or savings |
 | Partial list / continuation / cap error | Retain normalized rows with their partial receipt; do not call page one the whole estate |
 | Invalid HTML startup | Request a complete compatible snapshot; the UI deliberately exposes no partial success |
 | File/response limit exceeded | Keep the requested full scope; do not drop records, ZIP, upload to Storage or silently compress metadata |
@@ -1243,64 +1319,64 @@ wayfinding only; neither is installed or presented as the scoring authority.
 
 ## Copy-Ready Bilingual Q&A Prompt Pack (Castellano & English)
 
-Select `/agent aks-waf-live` in **New chat** and use any of these prompts in **Spanish (Castellano)** or **English**:
+In **New chat**, select the specialist with **/agent** → `aks-waf-live` (check the **Agent: aks-waf-live** chip), then paste any of these prompts in **Spanish (Castellano)** or **English**:
 
 ### 1. Discover Configured AKS Clusters Roster / Listar los Clusteres AKS Configurados (`list_clusters`)
 - **Castellano:**
   ```text
-  @aks-waf-live Ejecuta operation="list_clusters" para mostrarme los clusteres AKS configurados en el alcance aprobado antes de lanzar la evaluacion completa.
+  Ejecuta operation="list_clusters" para mostrarme los clusteres AKS configurados en el alcance aprobado antes de lanzar la evaluacion completa.
   ```
 - **English:**
   ```text
-  @aks-waf-live Run operation="list_clusters" to show the configured AKS clusters in the approved roster before launching the full assessment.
+  Run operation="list_clusters" to show the configured AKS clusters in the approved roster before launching the full assessment.
   ```
 
 ### 2. Full Multi-Cluster Well-Architected Report (4 Files) / Informe Completo Multi-Cluster AKS WAF (4 Archivos)
 - **Castellano:**
   ```text
-  @aks-waf-live Genera el informe completo Well-Architected y de configuracion para todos los clusteres AKS aprobados (operation="report", cluster_name="all") y entregame los 4 enlaces descargables (HTML, JSON, CSV de hallazgos y CSV de inventario) manteniendo cada cluster independiente.
+  Genera el informe completo Well-Architected y de configuracion para todos los clusteres AKS aprobados (operation="report", cluster_name="all") y entregame los 4 enlaces descargables (HTML, JSON, CSV de hallazgos y CSV de inventario) manteniendo cada cluster independiente.
   ```
 - **English:**
   ```text
-  @aks-waf-live Generate the complete Well-Architected and configuration review report across all approved AKS clusters (operation="report", cluster_name="all") and deliver all 4 downloadable file links (HTML, JSON, findings CSV, and inventory CSV) while keeping each cluster's posture independent.
+  Generate the complete Well-Architected and configuration review report across all approved AKS clusters (operation="report", cluster_name="all") and deliver all 4 downloadable file links (HTML, JSON, findings CSV, and inventory CSV) while keeping each cluster's posture independent.
   ```
 
 ### 3. Security, Identity & Network Isolation Findings / Hallazgos de Seguridad, Identidad y Red en AKS
 - **Castellano:**
   ```text
-  @aks-waf-live Consulta en modo query los hallazgos del pilar Security (operation="query", view="findings", pillar="Security", status="fail") y explicame el estado de RBAC/Entra ID, Workload Identity, red privada/authorized IP ranges, Network Policy y Defender for Containers en cada cluster.
+  Consulta en modo query los hallazgos del pilar Security (operation="query", view="findings", pillar="Security", status="fail") y explicame el estado de RBAC/Entra ID, Workload Identity, red privada/authorized IP ranges, Network Policy y Defender for Containers en cada cluster.
   ```
 - **English:**
   ```text
-  @aks-waf-live Query the failing findings in the Security pillar (operation="query", view="findings", pillar="Security", status="fail") and explain the posture of RBAC/Entra ID, Workload Identity, private cluster/authorized IP ranges, Network Policy, and Defender for Containers for each cluster.
+  Query the failing findings in the Security pillar (operation="query", view="findings", pillar="Security", status="fail") and explain the posture of RBAC/Entra ID, Workload Identity, private cluster/authorized IP ranges, Network Policy, and Defender for Containers for each cluster.
   ```
 
 ### 4. Reliability, Availability Zones & Node Pool Architecture / Fiabilidad, Zonas de Disponibilidad y Node Pools
 - **Castellano:**
   ```text
-  @aks-waf-live Revisa los hallazgos del pilar Reliability y el inventario de node pools (operation="query", view="node_pools"): que node pools separan modo System vs User, cuales tienen Availability Zones y autoscaling habilitados, y que pasa si un cluster esta detenido (Stopped)?
+  Revisa los hallazgos del pilar Reliability y el inventario de node pools (operation="query", view="node_pools"): que node pools separan modo System vs User, cuales tienen Availability Zones y autoscaling habilitados, y que pasa si un cluster esta detenido (Stopped)?
   ```
 - **English:**
   ```text
-  @aks-waf-live Review the Reliability pillar findings and node pool inventory (operation="query", view="node_pools"): which node pools separate System vs User mode, which ones have Availability Zones and cluster autoscaler enabled, and how is a Stopped cluster qualified?
+  Review the Reliability pillar findings and node pool inventory (operation="query", view="node_pools"): which node pools separate System vs User mode, which ones have Availability Zones and cluster autoscaler enabled, and how is a Stopped cluster qualified?
   ```
 
 ### 5. Cost Optimization (FinOps) & Capacity Sizing / Optimizacion de Costes (FinOps) y Dimensionamiento
 - **Castellano:**
   ```text
-  @aks-waf-live Consulta los hallazgos del pilar Cost Optimization (operation="query", view="findings", pillar="Cost Optimization") y resume las oportunidades reales de ahorro en SKUs de nodos, autoscale min/max, entorno dev/test y telemetria de uso de CPU/memoria.
+  Consulta los hallazgos del pilar Cost Optimization (operation="query", view="findings", pillar="Cost Optimization") y resume las oportunidades reales de ahorro en SKUs de nodos, autoscale min/max, entorno dev/test y telemetria de uso de CPU/memoria.
   ```
 - **English:**
   ```text
-  @aks-waf-live Query the Cost Optimization pillar findings (operation="query", view="findings", pillar="Cost Optimization") and summarize the concrete optimization opportunities across node VM SKUs, autoscale min/max bounds, dev/test lifecycle, and observed CPU/memory utilization.
+  Query the Cost Optimization pillar findings (operation="query", view="findings", pillar="Cost Optimization") and summarize the concrete optimization opportunities across node VM SKUs, autoscale min/max bounds, dev/test lifecycle, and observed CPU/memory utilization.
   ```
 
 ### 6. Unassessed In-Cluster Kubernetes Checks vs. ARM Plane / Controles Dentro de Kubernetes (`No evaluado`) frente a ARM
 - **Castellano:**
   ```text
-  @aks-waf-live Que controles de la checklist oficial de AKS quedaron en estado "No evaluado" porque requieren inspeccionar objetos dentro de la API de Kubernetes (PodDisruptionBudgets, ResourceQuotas, requests/limits de pods) y no solo el plano ARM?
+  Que controles de la checklist oficial de AKS quedaron en estado "No evaluado" porque requieren inspeccionar objetos dentro de la API de Kubernetes (PodDisruptionBudgets, ResourceQuotas, requests/limits de pods) y no solo el plano ARM?
   ```
 - **English:**
   ```text
-  @aks-waf-live Which checks from the official AKS checklist remained "Not evaluated" because they require inspecting in-cluster Kubernetes API objects (PodDisruptionBudgets, ResourceQuotas, pod requests/limits) rather than the ARM control plane?
+  Which checks from the official AKS checklist remained "Not evaluated" because they require inspecting in-cluster Kubernetes API objects (PodDisruptionBudgets, ResourceQuotas, pod requests/limits) rather than the ARM control plane?
   ```

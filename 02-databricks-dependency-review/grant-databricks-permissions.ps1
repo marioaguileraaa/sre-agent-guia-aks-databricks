@@ -67,11 +67,12 @@ if ($ws.Count -gt 5) { Write-Warn2 "Hay $($ws.Count) workspaces; el tool admite 
 
 Write-Step "1/3 Azure: Reader en la suscripcion"
 $scope = "/subscriptions/$SubscriptionId"
-$exists = az role assignment list --assignee-object-id $PrincipalId --scope $scope --role $ReaderRoleId --query "[0].id" -o tsv 2>$null
-if ($exists) { Write-Ok "Reader ya asignado" }
+$exists = az role assignment list --assignee-object-id $PrincipalId --scope $scope --role $ReaderRoleId --include-inherited --query "[0].id" -o tsv 2>$null
+if ($exists) { Write-Ok "Reader ya asignado (en la suscripcion o heredado de un Management Group)" }
 else {
     az role assignment create --assignee-object-id $PrincipalId --assignee-principal-type ServicePrincipal --role $ReaderRoleId --scope $scope -o none
-    Write-Ok "Reader asignado en $scope"
+    if ($LASTEXITCODE -ne 0) { Write-Warn2 "No se pudo asignar Reader en $scope (hace falta Owner, User Access Administrator o Role Based Access Control Administrator; ver R1)" }
+    else { Write-Ok "Reader asignado en $scope" }
 }
 
 if (-not $SkipDatabricksGrants) {

@@ -7,7 +7,7 @@ tasks and incident handlers are not modified by these files.
 |---|---|
 | Name | `databricks-dependency-live` |
 | Skill | Only `databricks-dependency-live` |
-| Selected tool | Only `generate-databricks-dependency-report` |
+| Selected tool | Only `databricks-dependency-report` |
 | Default cadence | On demand; no scheduled task is created by default |
 | Remediation authority | None (read-only assessment) |
 
@@ -24,7 +24,7 @@ agent or a deployment tool.
 
 ```text
 You are the read-only Azure Databricks dependency mapping and configuration review specialist.
-Follow skill databricks-dependency-live and use ONLY generate-databricks-dependency-report.
+Follow skill databricks-dependency-live and use ONLY databricks-dependency-report.
 Observe only its fixed approved workspace allowlist and explicit managed identity configuration.
 Report all three levels (workspace, workload, resource), four areas (best_practices, security, finops, optimization) and five WAF pillars with source/time/value evidence, coverage, conditional applicability and concrete Microsoft/Databricks Learn recommendations.
 Keep the dependency graph provenance strict: classify every relationship as OBSERVED (exact native ID/key join across collected APIs), INFERRED (explicit URI/hostname reference to an uncollected external resource) or UNKNOWN (uncollected runtime table/column lineage in system.access.table_lineage, notebook code internals, or untested data-plane reachability).
@@ -46,6 +46,11 @@ Use the actual approved workspace name privately once configured. Before the
 colleague session is completed, running any report/query prompt will honestly
 return `configuration_required` without making network calls.
 
+In **New chat**, select the specialist with **/agent** → `databricks-dependency-live`
+and check the **Agent: databricks-dependency-live** chip before pasting a prompt.
+Typing `@` no longer opens a picker, and `/databricks-dependency-live` listed
+under *SKILLS* invokes the skill, not the specialist.
+
 ### 1. List configured workspaces (no authentication or network calls)
 
 ```json
@@ -55,7 +60,7 @@ return `configuration_required` without making network calls.
 ### 2. Full dependency & configuration report (Spanish)
 
 ```text
-@databricks-dependency-live Genera la revisión completa de dependencias y
+Genera la revisión completa de dependencias y
 configuración de Azure Databricks para <APPROVED_DATABRICKS_WORKSPACE_NAME> con
 operation=report. Profundiza en el mapa de dependencias (OBSERVED, INFERRED y
 UNKNOWN) entre el workspace ARM, VNet/NSG/Private Link, Access Connector,
@@ -74,7 +79,7 @@ de dependencias). No inicies clústeres ni SQL Warehouses ni cambies nada.
 ### 3. Full dependency & configuration report (English)
 
 ```text
-@databricks-dependency-live Run the complete Azure Databricks dependency map
+Run the complete Azure Databricks dependency map
 and configuration review for <APPROVED_DATABRICKS_WORKSPACE_NAME> using
 operation=report. Cover the deep dependency graph (OBSERVED native joins,
 explicit INFERRED URI targets and UNKNOWN runtime lineage blind spots), best
@@ -97,7 +102,7 @@ compute or modify any resource.
 ### 5. Grounded questions on the dependency map (`view="dependencies"`)
 
 ```text
-@databricks-dependency-live Usa query con view=dependencies y
+Usa query con view=dependencies y
 classification=OBSERVED para <APPROVED_DATABRICKS_WORKSPACE_NAME>. ¿Qué
 relaciones exactas están confirmadas entre tareas de Jobs, clústeres, SQL
 Warehouses, pipelines declarativos, Storage Credentials, External Locations y
@@ -109,7 +114,7 @@ recursos ARM asociados? Indica los campos de join y las fuentes de cada arista.
 ```
 
 ```text
-@databricks-dependency-live Usa query con view=dependencies y
+Usa query con view=dependencies y
 classification=INFERRED. ¿Qué cuentas de almacenamiento ADLS Gen2 o Key Vaults
 están referenciados por URI/hostname en Unity Catalog o en el workspace pero no
 tienen lectura directa en el inventario ARM?
@@ -120,7 +125,7 @@ tienen lectura directa en el inventario ARM?
 ```
 
 ```text
-@databricks-dependency-live Usa query con view=dependencies y
+Usa query con view=dependencies y
 classification=UNKNOWN. ¿Qué dependencias quedan explícitamente como UNKNOWN
 (por ejemplo linaje dinámico de tablas/columnas en system.access.table_lineage
 o código interno de notebooks) y por qué no se infieren ni se arranca un SQL
@@ -134,7 +139,7 @@ Warehouse para consultarlas?
 ### 6. Grounded questions on findings, coverage and FinOps
 
 ```text
-@databricks-dependency-live Usa query/findings con area=security y
+Usa query/findings con area=security y
 status=failed. Prioriza únicamente los riesgos observados con su recurso,
 configuración, fuente, hora UTC y recomendación oficial de Microsoft Learn.
 ```
@@ -144,7 +149,7 @@ configuración, fuente, hora UTC y recomendación oficial de Microsoft Learn.
 ```
 
 ```text
-@databricks-dependency-live Usa query/findings con area=finops y query/finops.
+Usa query/findings con area=finops y query/finops.
 ¿Qué jobs productivos están atados a clústeres All-Purpose (existing_cluster_id),
 qué clústeres o SQL Warehouses carecen de autoterminación acotada y qué costes
 ARM reales tienen moneda y ResourceId verificados sin inventar ahorros DBU?
@@ -155,7 +160,7 @@ ARM reales tienen moneda y ResourceId verificados sin inventar ahorros DBU?
 ```
 
 ```text
-@databricks-dependency-live Usa query/coverage para comprobar qué fuentes ARM,
+Usa query/coverage para comprobar qué fuentes ARM,
 Workspace REST y Unity Catalog respondieron complete, partial, denied o
 not_configured, incluyendo el modo de autenticación cross-tenant configurado.
 ```

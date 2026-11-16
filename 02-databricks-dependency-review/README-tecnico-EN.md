@@ -2,6 +2,33 @@
 
 > **Azure SRE Agent** · Read-only Python tool · Runtime skill · Restricted specialist · Offline HTML, full JSON and two CSVs
 
+> [!IMPORTANT]
+> **Update 16/11/2026 — read first** (Spanish summary: [`LEEME-PRIMERO.md`](../LEEME-PRIMERO.md#-actualización-16112026--leed-esto-primero)).
+> - **Tool name:** the lab tool was created through the API as `generate-databricks-dependency-report`
+>   (37 characters); that is the name shown in the October screenshots, captions and evidence rows
+>   below, which are kept as historical records. Today the portal's **Tool Name** field stops at 36
+>   characters (`generate-databricks-dependency-repor`), so create the tool as
+>   **`databricks-dependency-report`** and use exactly that name in `SKILL.md`, the specialist
+>   instructions and **Choose tools**. The file name `generate-databricks-dependency-report.py`
+>   does not change.
+> - **Paste the current `generate-databricks-dependency-report.py` again.** Since early November 2026
+>   the SRE Agent sandbox issues sidecar tokens with `tid`/`clientId`/`scp` instead of `aud`/`appid`;
+>   code copied before 16/11/2026 fails every Azure read with `identity_mismatch`. The current file
+>   adds `normalize_sidecar_claims`, which keeps the tenant, client and audience checks.
+> - **Portal changes since the October captures:** *Builder* is now **Build + configure → Agent
+>   Canvas**; the agent menu has no *Settings* (Client ID: `MANAGED_IDENTITY_CLIENT_ID` in the current
+>   AKS tool code, or Azure portal → agent resource group → managed identity `id-…` → **Overview →
+>   Client ID**); the Python tool dialog has three tabs (*Code / Test playground / Identity*), **no
+>   Requirements field** and **no parameter/enum editor** (the 12 inputs are detected from
+>   `def main(...)`; the code validates `workspace_name` against `APPROVED_WORKSPACES`); the Test
+>   playground boxes start **empty**; **Save / Create tool** stay disabled until **Test** has run; in a
+>   skill, paste `SKILL.md` first and then use **Choose tools**; in chat, select the specialist with
+>   **/agent** (typing `@` no longer opens a picker).
+> - **Test playground limit:** the test request is cut at ~100 s with HTTP 504 even with Timeout 900;
+>   run long queries and reports from chat.
+> - The SHA-256 values quoted in this guide identify the October lab files; the files in this
+>   repository differ (Gestamp edition and this update), so do not use them to validate a download.
+
 Turn a fixed, approved Azure Databricks workspace scope into a dated review of
 **deep dependency mapping (`OBSERVED`, `INFERRED`, `UNKNOWN`), best practices,
 security, FinOps and general optimization**. Trace how the ARM workspace, VNet
@@ -149,7 +176,7 @@ place.
 | Constant / Field | Who provides it | How to find it |
 |---|---|---|
 | `SRE_TENANT_ID` | You (Tenant A) | Azure Portal (Tenant A) > **Microsoft Entra ID > Overview > Tenant ID** |
-| `MANAGED_IDENTITY_CLIENT_ID` | You (Tenant A) | SRE Agent > **Settings > Azure settings > Managed Identity > Go to Identity > Client ID** (also record **Object (principal) ID** for FIC `subject` / Lighthouse RBAC) |
+| `MANAGED_IDENTITY_CLIENT_ID` | You (Tenant A) | Azure portal > SRE Agent resource group > managed identity `id-…` > **Overview > Client ID** (the SRE Agent portal no longer has *Settings*; also record **Object (principal) ID** for FIC `subject` / Lighthouse RBAC) |
 | `TARGET_TENANT_ID` | Colleague (Tenant B) | Azure Portal (Tenant B) > **Microsoft Entra ID > Overview > Tenant ID** |
 | `SUBSCRIPTION_ID` | Colleague (Tenant B) | Azure Portal (Tenant B) > **Azure Databricks workspace > Overview > Subscription ID** |
 | `<APPROVED_DATABRICKS_WORKSPACE_NAME>` | Colleague (Tenant B) | Exact ARM resource name of `Microsoft.Databricks/workspaces` |
@@ -229,7 +256,9 @@ APPROVED_WORKSPACES = {
 
 And in your private copy of `tool-parameters.schema.json`, replace
 `"<APPROVED_DATABRICKS_WORKSPACE_NAME>"` in `properties.workspace_name.enum`
-with the exact workspace name.
+with the exact workspace name (reference only: today's portal has no enum
+editor and detects the parameters from `def main(...)`; the code validates
+`workspace_name` against `APPROVED_WORKSPACES`).
 
 ## How the pieces fit together
 
@@ -237,7 +266,7 @@ with the exact workspace name.
 flowchart LR
     H["Human selects<br/>approved workspace(s)"] --> C["Normal SRE chat<br/>databricks-dependency-live"]
     C --> S["Runtime skill<br/>databricks-dependency-live"]
-    C --> T["Only selected tool<br/>generate-databricks-dependency-report"]
+    C --> T["Only selected tool<br/>databricks-dependency-report"]
     S -.->|"uses only"| T
     T --> I["Explicit SRE UAMI<br/>+ verified cross-tenant / same-tenant auth"]
     I --> A["Plane 1: ARM GETs<br/>Workspace + VNet/NSG/PE/Storage/KV/AccessConnector"]
@@ -310,9 +339,10 @@ Markdown files (never an HTML sign-in wrapper):
 
 ## Step 0 - Identify the reporting identity and approve cross-tenant or same-tenant scope
 
-1. In the SRE portal, open **Settings > Azure settings > Managed Identity > Go
-   to Identity** and record both **Client ID** (for
-   `MANAGED_IDENTITY_CLIENT_ID`) and **Object (principal) ID** (for Entra FIC
+1. The SRE portal no longer has **Settings**: in the Azure portal, open the
+   agent's resource group → managed identity `id-…` → **Overview** and record
+   both **Client ID** (for `MANAGED_IDENTITY_CLIENT_ID`; it is also the value in
+   the current AKS tool code) and **Object (principal) ID** (for Entra FIC
    `subject` or Azure RBAC assignments).
 2. Confirm your SRE Agent's tenant GUID (`SRE_TENANT_ID`).
 3. If your colleague's Azure Databricks workspace is in another tenant, follow
@@ -341,19 +371,23 @@ staging copy outside Git**, edit only the administrator constants at the top of
 
 ## Step 2 - Create the Python tool and verify its 12 typed inputs
 
-1. In the SRE Agent portal, open **Builder > Agent Canvas**, click the
-   drop-down arrow beside **Create**, and choose **Tool > Python tool**
-   (clicking the **Create** button body opens the custom-agent form instead).
-   Select the **Code** tab (never **Generate** or **Refine with AI**).
+1. In the SRE Agent portal, open **Build + configure > Agent Canvas** (formerly
+   *Builder*), click **Create ▾** (the arrow beside **Create**), and choose
+   **Tool › Python tool** (clicking the **Create** button body opens the
+   custom-agent form instead). The dialog has three tabs (*Code / Test
+   playground / Identity*); use the **Code** tab (never **Generate** or
+   **Refine with AI**).
 
    ![Builder Canvas Create drop-down arrow for Tool > Python tool](images/08-create-drop-down-arrow.png)
 
-   *Real Builder navigation excerpt in Canvas view (`08-create-drop-down-arrow.png`): **(1)** use the **Create** drop-down arrow, not its custom-agent button body; **(2)** choose **Tool**, then **Python tool** in its submenu. This navigation-only crop is not Databricks deployment evidence.*
+   *Real Builder navigation excerpt in Canvas view (`08-create-drop-down-arrow.png`): **(1)** use the **Create** drop-down arrow, not its custom-agent button body; **(2)** choose **Tool**, then **Python tool** in its submenu. This navigation-only crop is not Databricks deployment evidence. (October capture: the menu is now **Build + configure**.)*
 
-2. Name the tool **`generate-databricks-dependency-report`**, set timeout to
-   **900 seconds** (`timeoutSeconds=900`, `dependencies=[]`, `toolMode="Auto"`),
-   and paste the entire standalone file
-   `generate-databricks-dependency-report.py`.
+2. Set **Tool Name** to **`databricks-dependency-report`** (the field accepts at
+   most 36 characters; see the update note at the top), set **Timeout
+   (seconds)** to **900** (default 120, maximum 900; `timeoutSeconds=900`,
+   `dependencies=[]`, `toolMode="Auto"`), and paste the entire standalone file
+   `generate-databricks-dependency-report.py`. There is no Requirements field:
+   the runtime already includes `azure-identity` and `Pillow`.
 
    ![Saved Python tool edit view with 900-second timeout and masked private code editor](images/02-private-code-and-timeout.png)
 
@@ -368,10 +402,19 @@ staging copy outside Git**, edit only the administrator constants at the top of
 
    *Actual **Identity** tab (`03-identity-access-off.png`): **(1)** open the native **Identity** tab; **(2)** **Enable Azure Identity** is `OFF` (`authEnabled=false`)—source authorization is separate.*
 
-4. Configure all **12** typed parameters matching
-   [`tool-parameters.schema.json`](tool-parameters.schema.json), then save and
-   reopen the tool profile to verify the definition-only `main` signature and
-   all 12 native parameter rows (`limit` and `offset` use `int`):
+   Do not switch it on, even briefly: the portal inserts four lines at the top
+   of the code (`# Azure Identity Authentication`,
+   `from azure.identity import DefaultAzureCredential`,
+   `credential = DefaultAzureCredential()`, `AZURE_ARM_TOKEN = …`) that stay
+   after you switch it off again. If that happens, delete them in **Code**.
+
+4. The **12** typed parameters are detected automatically from `def main(...)`
+   when the code is pasted (there is no parameter/enum editor; verify them in
+   the **Test playground** tab, where the 12 boxes start empty and every value
+   must be typed). [`tool-parameters.schema.json`](tool-parameters.schema.json)
+   documents them; after saving, reopen the tool profile to verify the
+   definition-only `main` signature and all 12 native parameter rows (`limit`
+   and `offset` use `int`):
 
 | Parameter | Runtime type | Default | Allowed values / constraint |
 |---|---|---|---|
@@ -410,12 +453,17 @@ staging copy outside Git**, edit only the administrator constants at the top of
 
 ## Step 3 - Create the runtime skill
 
-In **Builder > Skills > Create skill**, create **`databricks-dependency-live`**
-using the exact content of
+In **Build + configure > Agent Canvas > Create ▾ > Skill** (or **Build +
+configure > Extensions > Skill builder > Create skill**), create
+**`databricks-dependency-live`**: paste the exact content of
 [`skills/databricks-dependency-live/SKILL.md`](skills/databricks-dependency-live/SKILL.md)
 (committed Git blob SHA-256:
-`84567687bb41484db594981466daf4eadd9c4b43a8e590a94e67538e841cad9a`) and bind
-only `generate-databricks-dependency-report`.
+`84567687bb41484db594981466daf4eadd9c4b43a8e590a94e67538e841cad9a`) into the
+editor **first** (its front matter fills *Name* and *Description*), **then**
+use **Choose tools**, expand **PythonFunctionTool (n)** and bind only
+`databricks-dependency-report` (never the group checkbox); check the tool chip
+and the `tools:` line before **Create**. Pasting the full file after choosing
+the tool replaces the front matter and drops the tool.
 
 ![Saved databricks-dependency-live runtime skill profile](images/05-saved-runtime-skill.png)
 
@@ -423,12 +471,14 @@ only `generate-databricks-dependency-report`.
 
 ## Step 4 - Create the restricted specialist
 
-In **Builder > Custom agents / Subagents > Create**, configure:
+In **Build + configure > Agent Canvas**, click the **Create** button (it opens
+*Create a custom agent*; do not use *Refine with AI* or *View AI suggestions*)
+and configure:
 
 - **Name:** `databricks-dependency-live`
 - **Model:** Platform-supported default (`llmModelName=null`; do not invent custom model/reasoning/context fields in the SRE runtime configuration)
 - **Skill:** Only `databricks-dependency-live`
-- **Selected tools:** Only `generate-databricks-dependency-report`
+- **Selected tools:** Only `databricks-dependency-report` (expand the groups in **Choose tools**)
 - **Instructions:** Paste the copy-ready block from
   [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md)
   (LF instruction block SHA-256:
@@ -448,8 +498,10 @@ skill, single tool and instruction block are persisted.
 ## Step 5 - Run one report in normal chat and download its four files
 
 1. Open normal SRE chat, invoke the `/agent` picker, and select the registered
-   specialist **`databricks-dependency-live`** (do not rely on a free-text
-   `@name` mention without selecting the specialist).
+   specialist **`databricks-dependency-live`**; check the **Agent:
+   databricks-dependency-live** chip before pasting a prompt (typing `@` no
+   longer opens a picker, and `/databricks-dependency-live` under *SKILLS*
+   invokes the skill, not the specialist).
 
    ![Select registered databricks-dependency-live specialist in the /agent picker](images/10-select-registered-specialist.png)
 
@@ -461,7 +513,7 @@ skill, single tool and instruction block are persisted.
 
 2. **Pre-session unconfigured readiness check:** Before the colleague's
    Tenant-B workspace constants are configured, asking the selected specialist
-   for a readiness/report check invokes `generate-databricks-dependency-report`,
+   for a readiness/report check invokes `databricks-dependency-report`,
    stops before authentication, returns `configuration_required` /
    `artifact_status="not_written"`, and confirms that no source data,
    dependency graph or four-file bundle was fabricated.
@@ -523,6 +575,13 @@ first report.
 
 | Symptom / Error code | Meaning | Safe resolution |
 |---|---|---|
+| `identity_mismatch` on `arm_workspace` / any Azure read | The pasted code predates 16/11/2026 and rejects the sandbox sidecar token claims | Paste the current `generate-databricks-dependency-report.py` again |
+| `http_error` with `http_status: 404` on `arm_workspace` | No workspace with that name in that `resource_group` / `SUBSCRIPTION_ID` | Copy the exact workspace name, resource group and subscription into `APPROVED_WORKSPACES` / `SUBSCRIPTION_ID` |
+| `invalid_parameter`: `workspace_name must exactly match the fixed operator allowlist` | The name is not a key of `APPROVED_WORKSPACES` (there is no enum in today's portal) | Use the exact name returned by `list_workspaces` |
+| HTTP 504 in the Test playground after ~100 s | Playground request limit, not the tool's Timeout | Run the query or report from chat |
+| **Save** / **Create tool** disabled | The Test playground has not been run | Run **Test** first; if still disabled after a successful test, check the SRE Agent Administrator role |
+| Tool name saved as `generate-databricks-dependency-repor` | **Tool Name** accepts at most 36 characters | Recreate it as `databricks-dependency-report`, or use exactly the saved name in `SKILL.md`, the specialist instructions and **Choose tools** |
+| `azure_cost` HTTP 429 | Cost Management throttling after several calls in a row | Wait a few minutes and retry |
 | `configuration_required` | Committed `<PLACEHOLDER>` GUIDs or workspace host are still present | Expected before the colleague session. Fill the fixed constants in your private deployment copy during the session. |
 | `cross_tenant_configuration_required` | `SRE_TENANT_ID != TARGET_TENANT_ID` while `auth_mode == "same_tenant_uami"` | Switch `auth_mode` to `cross_tenant_multitenant_fic`, `cross_tenant_lighthouse_plus_databricks_oidc` or `cross_tenant_lighthouse_plus_keyvault_oauth_m2m` after completing cross-tenant setup. |
 | `cross_tenant_auth_failed` | Entra FIC token exchange at `login.microsoftonline.com/<TARGET_TENANT_ID>/oauth2/v2.0/token` failed | Verify the multi-tenant App Registration in Tenant A has the UAMI's **Object (principal) ID** as `subject`, `issuer = https://login.microsoftonline.com/<SRE_TENANT_ID>/v2.0`, `audience = api://AzureADTokenExchange`, and is provisioned in Tenant B. |
@@ -567,64 +626,64 @@ python -m unittest discover -s 08-databricks-dependency-configuration-review\tes
 
 ## Copy-Ready Bilingual Q&A Prompt Pack (Castellano & English)
 
-Select `/agent databricks-dependency-live` in **New chat** and use any of these prompts in **Spanish (Castellano)** or **English**:
+In **New chat**, select the specialist with **/agent** → `databricks-dependency-live` (check the **Agent: databricks-dependency-live** chip), then paste any of these prompts in **Spanish (Castellano)** or **English**:
 
 ### 1. Discover Configured Databricks Workspaces / Listar los Workspaces de Databricks Configurados (`list_workspaces`)
 - **Castellano:**
   ```text
-  @databricks-dependency-live Ejecuta operation="list_workspaces" para mostrar los workspaces de Azure Databricks configurados en el alcance y su modo de conexion (same_tenant_uami vs cross_tenant_multitenant_fic) sin realizar llamadas de red.
+  Ejecuta operation="list_workspaces" para mostrar los workspaces de Azure Databricks configurados en el alcance y su modo de conexion (same_tenant_uami vs cross_tenant_multitenant_fic) sin realizar llamadas de red.
   ```
 - **English:**
   ```text
-  @databricks-dependency-live Run operation="list_workspaces" to list the configured Azure Databricks workspaces in scope and their connection mode (same_tenant_uami vs cross_tenant_multitenant_fic) without making network calls.
+  Run operation="list_workspaces" to list the configured Azure Databricks workspaces in scope and their connection mode (same_tenant_uami vs cross_tenant_multitenant_fic) without making network calls.
   ```
 
 ### 2. Full Databricks Dependency & Configuration Dossier (4 Files) / Informe Completo de Dependencias y Configuracion Databricks (4 Archivos)
 - **Castellano:**
   ```text
-  @databricks-dependency-live Genera el informe completo de dependencias y configuracion para los workspaces aprobados (operation="report", workspace_name="all", view="overview") y entregame los 4 archivos descargables (HTML, JSON, CSV de hallazgos y CSV de dependencias) distinguiendo aristas OBSERVED, INFERRED y UNKNOWN.
+  Genera el informe completo de dependencias y configuracion para los workspaces aprobados (operation="report", workspace_name="all", view="overview") y entregame los 4 archivos descargables (HTML, JSON, CSV de hallazgos y CSV de dependencias) distinguiendo aristas OBSERVED, INFERRED y UNKNOWN.
   ```
 - **English:**
   ```text
-  @databricks-dependency-live Generate the complete dependency map and configuration review report across the approved workspaces (operation="report", workspace_name="all", view="overview") and deliver all 4 downloadable files (HTML, JSON, findings CSV, and dependencies CSV) distinguishing OBSERVED, INFERRED, and UNKNOWN edges.
+  Generate the complete dependency map and configuration review report across the approved workspaces (operation="report", workspace_name="all", view="overview") and deliver all 4 downloadable files (HTML, JSON, findings CSV, and dependencies CSV) distinguishing OBSERVED, INFERRED, and UNKNOWN edges.
   ```
 
 ### 3. Dependency Graph & Lineage Inspection (`OBSERVED` vs `INFERRED` vs `UNKNOWN`) / Grafo de Dependencias y Linaje
 - **Castellano:**
   ```text
-  @databricks-dependency-live Consulta el grafo de dependencias del workspace (operation="query", workspace_name="all", view="dependencies", confidence="all") y explicame que relaciones entre Jobs, Clusters, SQL Warehouses, Catalogos Unity Catalog y External Locations son OBSERVED frente a INFERRED.
+  Consulta el grafo de dependencias del workspace (operation="query", workspace_name="all", view="dependencies", confidence="all") y explicame que relaciones entre Jobs, Clusters, SQL Warehouses, Catalogos Unity Catalog y External Locations son OBSERVED frente a INFERRED.
   ```
 - **English:**
   ```text
-  @databricks-dependency-live Query the workspace dependency graph (operation="query", workspace_name="all", view="dependencies", confidence="all") and explain which edges across Jobs, Clusters, SQL Warehouses, Unity Catalog objects, and External Locations are OBSERVED versus INFERRED.
+  Query the workspace dependency graph (operation="query", workspace_name="all", view="dependencies", confidence="all") and explain which edges across Jobs, Clusters, SQL Warehouses, Unity Catalog objects, and External Locations are OBSERVED versus INFERRED.
   ```
 
 ### 4. Governance & Unity Catalog Posture / Gobernanza y Postura en Unity Catalog
 - **Castellano:**
   ```text
-  @databricks-dependency-live Consulta los controles del pilar Governance (operation="query", workspace_name="all", view="findings", pillar="Governance") y resume que catalogos, esquemas, storage credentials y external locations se han detectado y por que G03 queda No evaluado cuando solo hay permiso BROWSE.
+  Consulta los controles del pilar Governance (operation="query", workspace_name="all", view="findings", pillar="Governance") y resume que catalogos, esquemas, storage credentials y external locations se han detectado y por que G03 queda No evaluado cuando solo hay permiso BROWSE.
   ```
 - **English:**
   ```text
-  @databricks-dependency-live Query the Governance pillar findings (operation="query", workspace_name="all", view="findings", pillar="Governance") and summarize which catalogs, schemas, storage credentials, and external locations were discovered and why G03 is qualified as Not evaluated under BROWSE-only privileges.
+  Query the Governance pillar findings (operation="query", workspace_name="all", view="findings", pillar="Governance") and summarize which catalogs, schemas, storage credentials, and external locations were discovered and why G03 is qualified as Not evaluated under BROWSE-only privileges.
   ```
 
 ### 5. Compute, SQL Warehouses & Cost Optimization (FinOps) / Clusters, SQL Warehouses y Optimizacion FinOps
 - **Castellano:**
   ```text
-  @databricks-dependency-live Consulta los controles de Cost Optimization y Reliability (operation="query", workspace_name="all", view="findings", pillar="Cost Optimization") y detalla si hay clusters interactivos o SQL Warehouses sin auto-termination acotada, sin Photon o sin cluster policy asignada.
+  Consulta los controles de Cost Optimization y Reliability (operation="query", workspace_name="all", view="findings", pillar="Cost Optimization") y detalla si hay clusters interactivos o SQL Warehouses sin auto-termination acotada, sin Photon o sin cluster policy asignada.
   ```
 - **English:**
   ```text
-  @databricks-dependency-live Query the Cost Optimization and Reliability findings (operation="query", workspace_name="all", view="findings", pillar="Cost Optimization") and detail whether any all-purpose clusters or SQL Warehouses lack bounded auto-termination, Photon, or an assigned cluster policy.
+  Query the Cost Optimization and Reliability findings (operation="query", workspace_name="all", view="findings", pillar="Cost Optimization") and detail whether any all-purpose clusters or SQL Warehouses lack bounded auto-termination, Photon, or an assigned cluster policy.
   ```
 
 ### 6. Plane 1 (ARM) vs. Plane 2 (Databricks REST) Source Coverage / Cobertura de Fuentes Plano 1 ARM frente a Plano 2 Databricks REST
 - **Castellano:**
   ```text
-  @databricks-dependency-live Consulta el registro de cobertura de fuentes (operation="query", workspace_name="all", view="sources") y explica que fuentes del Plano 2 (Clusters, Jobs, SQL Warehouses, Workspace Conf, Unity Catalog) respondieron HTTP 200 y como se comporta el colector si el Plano 1 ARM devuelve 403 en un escenario Cross-Tenant.
+  Consulta el registro de cobertura de fuentes (operation="query", workspace_name="all", view="sources") y explica que fuentes del Plano 2 (Clusters, Jobs, SQL Warehouses, Workspace Conf, Unity Catalog) respondieron HTTP 200 y como se comporta el colector si el Plano 1 ARM devuelve 403 en un escenario Cross-Tenant.
   ```
 - **English:**
   ```text
-  @databricks-dependency-live Query the source coverage ledger (operation="query", workspace_name="all", view="sources") and explain which Plane 2 APIs (Clusters, Jobs, SQL Warehouses, Workspace Conf, Unity Catalog) returned HTTP 200 and how the collector preserves Plane 2 evaluation when Plane 1 ARM returns 403 in a cross-tenant setup.
+  Query the source coverage ledger (operation="query", workspace_name="all", view="sources") and explain which Plane 2 APIs (Clusters, Jobs, SQL Warehouses, Workspace Conf, Unity Catalog) returned HTTP 200 and how the collector preserves Plane 2 evaluation when Plane 1 ARM returns 403 in a cross-tenant setup.
   ```

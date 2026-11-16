@@ -110,8 +110,8 @@ To change a use case later, edit only `CONFIG` (queries, thresholds, rules, KPIs
 | Option A only | Python 3.9+, `pip install requests`, Azure CLI signed in (`az login`) |
 | Agent managed identity | Nothing extra for the builder itself. For live checks, the generated use cases need read roles on their sources (see [Permissions](#permissions-for-the-generated-use-cases)) |
 
-Find the agent identity: **SRE Agent portal > Settings > Azure settings > Managed Identity > Go to Identity**.
-The Azure portal **Overview** page shows the **Client ID** and the **Object (principal) ID**.
+Find the agent identity in the Azure portal: the agent's resource group → managed identity `id-…` (the SRE Agent
+portal no longer has *Settings*). Its **Overview** page shows the **Client ID** and the **Object (principal) ID**.
 
 ---
 
@@ -152,7 +152,7 @@ Three objects, created in this order: **Python tool → Skill → Subagent**. Re
 
 ### B1. Python tool `sre-usecase-builder-kit`
 
-**Builder > Agent Canvas > Create (arrow ▾) > Tool > Python tool**
+**Build + configure > Agent Canvas > Create ▾ (arrow) > Tool › Python tool**
 
 ![Create > Tool > Python tool](docs/images/01-builder-create-python-tool.png)
 
@@ -185,7 +185,7 @@ Then click **Create tool**:
 
 ### B2. Skill `sre-usecase-builder`
 
-**Builder > Agent Canvas > Create ▾ > Skill**
+**Build + configure > Agent Canvas > Create ▾ > Skill**
 
 ![Create > Skill](docs/images/06-builder-create-skill.png)
 
@@ -207,7 +207,7 @@ Click **Create**:
 
 ### B3. Subagent `sre-usecase-builder`
 
-**Builder > Agent Canvas > Create ▾ > Custom Agent**
+**Build + configure > Agent Canvas > Create ▾ > Custom Agent** (or the **Create** button)
 
 ![Create > Custom Agent](docs/images/10-builder-create-agent.png)
 
@@ -296,12 +296,12 @@ The answer and the downloadable `<name>-SETUP.md` contain the exact steps. In sh
 | Step | Where | What |
 |---|---|---|
 | 1 | Azure Cloud Shell | Run the `az role assignment create ...` commands from *Permissions* (skip those marked already granted) |
-| 2 | **Builder > Agent Canvas > Create ▾ > Tool > Python tool** | Block 1: name, description, timeout, parameters, code. Identity tab OFF |
+| 2 | **Build + configure > Agent Canvas > Create ▾ > Tool › Python tool** | Block 1: name, description, timeout, parameters, code. Identity tab OFF |
 | 3 | Test playground of that tool | Test in order: `mode=self_test` → `mode=discover` → `mode=report, publish=no` → `publish=yes` (only if publishing). Then **Create tool** |
 | 4 | **Create ▾ > Skill** | Block 2, with the new tool selected |
 | 5 | **Create ▾ > Custom Agent** | Block 3, with the new skill and tool selected |
 | 6 | Chat: `/agent <name>` | Run the report |
-| 7 | **Automation > Create > Scheduled task** | Block 4: task name, response subagent, prompt, frequency |
+| 7 | **Automation > Create ▾ > Scheduled task** | Block 4: task name, response subagent, prompt, frequency |
 
 A complete example of every generated file is in [`examples/orphaned-managed-disks/`](examples/orphaned-managed-disks/).
 
@@ -322,7 +322,7 @@ This is the HTML report structure, shown here on synthetic `self_test` data
 
 ![Generated HTML report (self-test data)](docs/images/27-generated-report-selftest.png)
 
-**Schedule it.** Go to **Automation > Create > Scheduled task**. Use the task name, **Response subagent** and prompt from block 4.
+**Schedule it.** Go to **Automation > Create ▾ > Scheduled task**. Use the task name, **Response subagent** and prompt from block 4.
 Set **Frequency** to the generated cron (`0 7 * * 1` = Mondays 07:00 UTC) via **Custom cron**, or pick the equivalent Weekly option.
 The time list is in **your local time zone**, so 08:00 CET is 07:00 UTC.
 

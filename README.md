@@ -2,6 +2,10 @@
 
 # Azure SRE Agent · Guía paso a paso: AKS (multi-suscripción) y Azure Databricks
 
+> 🔄 **Actualización 16/11/2026: leed primero [este bloque de `LEEME-PRIMERO.md`](LEEME-PRIMERO.md#-actualización-16112026--leed-esto-primero).**
+> Hay que usar (o volver a pegar) los dos `.py` actuales: los anteriores al 16/11 fallan con `identity_mismatch`.
+> La herramienta de Databricks se llama ahora `databricks-dependency-report` y el portal ha cambiado respecto a las capturas.
+
 > **Repositorio temporal para Gestamp.** Se eliminará cuando terminen las pruebas.
 > Los `.py` ya llevan el nombre y el logo de Gestamp; solo tenéis que poner el **Client ID** de vuestro
 > SRE Agent (el mismo que ya usáis en la herramienta de AKS). Ya no hace falta ningún ZIP: todo está aquí.
@@ -24,7 +28,7 @@ propio** skill y **su propio** subagente, y cada carpeta tiene **su propia guía
 - **[AKS](01-aks-well-architected-review/README.md):** si ya lo tenéis desplegado con una sola
   suscripción, la guía empieza por lo único que tenéis que hacer: **[los 7 cambios](01-aks-well-architected-review/README.md#a-si-ya-lo-tenéis-desplegado-qué-cambiar-7-pasos)**.
 - **[Databricks](02-databricks-dependency-review/README.md):** caso **nuevo**. La guía da por hecho
-  que ya habéis desplegado AKS (mismo agente, misma identidad, mismas pantallas del Builder) y
+  que ya habéis desplegado AKS (mismo agente, misma identidad, mismas pantallas de *Build + configure*) y
   explica **qué reutilizáis y qué es nuevo**: [ver aquí](02-databricks-dependency-review/README.md#ya-tenéis-el-caso-aks-desplegado-qué-reutilizáis-y-qué-es-nuevo).
 
 > **Antes de empezar:** si todavía no habéis desplegado el caso de **auditoría de credenciales
@@ -66,9 +70,10 @@ propio** skill y **su propio** subagente, y cada carpeta tiene **su propia guía
 1. **Un Azure SRE Agent ya creado** en [sre.azure.com](https://sre.azure.com) y permiso para
    crear herramientas, skills y subagentes en él (rol **SRE Agent Administrator**, o
    **SRE Agent Author + SRE Agent Standard User**).
-2. **El Client ID de la identidad del SRE Agent** (lo usan los scripts y el código):
-   **sre.azure.com → vuestro agente → Settings → Azure settings → Managed Identity →
-   Go to Identity → Overview → _Client ID_**.
+2. **El Client ID de la identidad del SRE Agent** (lo usan los scripts y el código): es la línea
+   `MANAGED_IDENTITY_CLIENT_ID = "…"` del código actual de vuestra herramienta de AKS, o, en el portal
+   de Azure, **grupo de recursos del agente → identidad administrada `id-…` → Overview → _Client ID_**
+   (en el portal del agente ya no hay *Settings*).
    > ⚠️ Es el **Client ID**, no el *Object (principal) ID*. Son dos GUID distintos.
 3. **PowerShell 7** y **Azure CLI** (`az`) con `az login` en el tenant correcto.
 4. **Las personas con los roles adecuados** para dar permisos: ver
@@ -124,17 +129,18 @@ az role assignment list --assignee $me --all --include-inherited --include-group
 
 ## ⭐ Test playground: probar la herramienta antes del chat
 
-Cada herramienta Python tiene un **Test playground** en el Builder con sus 12 parámetros. Cada guía
-explica **qué valor poner en cada parámetro** para las 3 pruebas (configuración → permisos →
-informe) y qué significa cada error:
+Cada herramienta Python tiene una pestaña **Test playground** en su diálogo (**Build + configure →
+Agent Canvas → Table view → Python tools** → herramienta → lápiz; no es el botón *Test playground* de
+la barra del Agent Canvas), con sus 12 parámetros. Cada guía explica **qué valor poner en cada
+parámetro** para las 3 pruebas (configuración → permisos → informe) y qué significa cada error:
 [playground AKS](01-aks-well-architected-review/README.md#-test-playground-qué-valores-poner-en-cada-parámetro) ·
 [playground Databricks](02-databricks-dependency-review/README.md#-paso-4--test-playground-qué-valores-poner-en-cada-parámetro).
 
 Resumen:
 
-1. **Dejad los valores por defecto** en todos los campos: `report`, `summary`, `all`, `25`, `0`.
-   **Nunca vacíos** los campos de lista (`operation`, `view`, `area`, `level`, `severity`,
-   `status`…): vacío da error.
+1. Las 12 cajas salen **vacías**: **escribid todos los valores** (`report`, `summary`, `all`, `25`,
+   `0` y lo que cambia en cada prueba). `must use its declared enum` = valor mal escrito en
+   `operation`, `view`, `area`, `level`, `severity` o `status`.
 2. **Prueba 1:** `operation = list_clusters` (AKS) o `list_workspaces` (Databricks), sin elegir
    nombre → comprueba la configuración.
 3. **Prueba 2:** `operation = query`, `view = coverage` y el nombre del clúster/workspace →
@@ -142,6 +148,9 @@ Resumen:
 4. **Prueba 3:** `operation = report` y el nombre, **resto por defecto** → informe completo.
 5. «Function test succeeded» solo significa que el código se ejecutó: mirad el `status` del
    resultado.
+6. **Save** / **Create tool** siguen en gris hasta pulsar **Test**. El playground corta a los
+   **~100 s con HTTP 504**: si pasa, lanzad el informe desde el chat (en AKS, poned antes
+   `kubernetes_enabled: False`).
 
 ---
 
@@ -154,15 +163,17 @@ Las dos carpetas siguen la misma estructura:
 | `README.md` | **Guía paso a paso en español** (empieza aquí) |
 | `grant-*-permissions.ps1` | Script que da los permisos de solo lectura y **genera el bloque de configuración** |
 | `generate-*-report.py` | Código de la herramienta Python. Solo se edita el bloque **CONFIGURACION** del principio |
-| `requirements.txt` | Paquetes Python que se pegan en el campo *Requirements* de la herramienta |
-| `tool-parameters.schema.json` | Los 12 parámetros de la herramienta (nombre, tipo, valor por defecto) |
+| `requirements.txt` | Paquetes Python de la herramienta. Informativo: hoy no hay campo *Requirements* y el entorno del SRE Agent ya los trae |
+| `tool-parameters.schema.json` | Referencia de los 12 parámetros (nombre, tipo, valor por defecto). El portal los saca solo de `def main(...)` |
 | `skills/*/SKILL.md` | Texto del skill |
 | `subagent-instructions-and-prompts.md` | Instrucciones del subagente y prompts de ejemplo |
 | `README-tecnico-EN.md` | Documentación técnica completa en inglés (referencia) |
 | `images/` | Capturas del portal y del informe |
 
 **Orden de despliegue (igual en los dos casos):**
-permisos → editar el `.py` → herramienta Python → skill → subagente → probar en un chat nuevo.
+permisos → editar el `.py` → herramienta Python → skill → subagente → probar en un chat nuevo
+(subagente elegido con **/agent**). En el skill, primero se pega el `SKILL.md` y después se elige la
+herramienta.
 
 ---
 
@@ -179,6 +190,10 @@ parte de workloads aparece como *No evaluado*. Es una práctica recomendada por 
 (identidades de Entra ID y autorización con Azure RBAC en lugar de cuentas locales), pero cambia
 cómo se autentican las personas en el clúster, así que **hay que planificarlo con el equipo de
 plataforma**. Detalle en la [guía de AKS](01-aks-well-architected-review/README.md#entra-id--azure-rbac-en-los-clústeres).
+**Hoy (16/11/2026)**, además, las herramientas Python del SRE Agent no llegan a la API de Kubernetes
+(HTTP 502 de la plataforma): los workloads salen *No evaluado* aunque el clúster tenga Entra ID +
+Azure RBAC, y activarlo no lo arregla. Mientras tanto, poned `kubernetes_enabled: False`
+([detalle](01-aks-well-architected-review/README.md#kubernetes-hoy-http-502-de-la-plataforma)).
 
 **¿Y los costes?**
 Son opcionales. Si se ejecuta el script con `-IncludeCost`, da el rol **Cost Management Reader**
@@ -193,3 +208,7 @@ CSV de inventario).
 Casi siempre es un pegado incorrecto en el bloque de configuración: dos líneas que han quedado
 unidas (`..."CLIENT_NAME = ...`) o unas comillas sin cerrar. Cada variable debe ir en su propia
 línea.
+
+**Me da `identity_mismatch` en cuanto lee Azure.**
+Estáis usando un `.py` anterior al 16/11/2026. Descargad de nuevo el repositorio y volved a pegar el
+`.py` en la herramienta (pestaña **Code**).

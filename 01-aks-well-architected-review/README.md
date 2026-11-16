@@ -3,6 +3,10 @@
 > **Azure SRE Agent** · Herramienta Python de solo lectura · Skill · Subagente restringido ·
 > Informe HTML + JSON completo + CSV de hallazgos + CSV de inventario
 
+> 🔄 **Actualización 16/11/2026: leed primero [este bloque de `LEEME-PRIMERO.md`](../LEEME-PRIMERO.md#-actualización-16112026--leed-esto-primero).**
+> Hay que volver a pegar el `.py` (si no, `identity_mismatch`), poner `kubernetes_enabled: False`
+> ([por qué](#kubernetes-hoy-http-502-de-la-plataforma)) y el portal ha cambiado respecto a las capturas.
+
 El subagente `aks-waf-live` revisa vuestros clústeres AKS (**hasta 500, repartidos en todas las
 suscripciones del tenant**) y genera un informe con:
 
@@ -73,7 +77,9 @@ Puntos clave:
    hay más, devuelve `next_offset`; el subagente sigue pidiendo páginas hasta que es `null`.
 6. **Informes por lotes de 5.** Un informe admite **hasta 5 clústeres** a la vez
    (`cluster_names="aks-a,aks-b,aks-c"`, sin espacios). Para toda la flota, el subagente hace
-   lotes de 5 y al final resume por suscripción y entorno.
+   lotes de 5 y al final resume por suscripción y entorno. Hoy, lotes de 5 con
+   `kubernetes_enabled: False`; si lo dejáis en `True`, lotes de 2
+   ([por qué](#kubernetes-hoy-http-502-de-la-plataforma)).
 
 ---
 
@@ -95,7 +101,7 @@ Hay **dos tipos de roles** que no hay que mezclar:
 |---|---|---|---|---|
 | 1 | **Administrador de Azure** (plataforma / seguridad) | Ejecuta `grant-aks-permissions.ps1` | **Owner**, **User Access Administrator** o **Role Based Access Control Administrator** en el alcance (ver R2). ❌ **Contributor NO sirve**: no puede asignar roles | Portal → Management Group o suscripción → **Access control (IAM)** |
 | 2 | **Quien configura el SRE Agent** | Crea o edita la herramienta, el skill y el subagente; pega el código; usa *Test playground* | **SRE Agent Administrator**, o **SRE Agent Author + SRE Agent Standard User** (los dos juntos). ❌ Owner/Contributor de Azure **no** sustituyen a estos roles | Portal → recurso del **SRE Agent** → **Access control (IAM)** |
-| 3 | **Usuarios** que piden informes | Chatean con `@aks-waf-live` y descargan los ficheros | **SRE Agent Standard User** | Igual que el 2 |
+| 3 | **Usuarios** que piden informes | Chatean con el subagente `aks-waf-live` (elegido con **/agent**) y descargan los ficheros | **SRE Agent Standard User** | Igual que el 2 |
 | 4 | **Equipo de plataforma AKS** (solo si deciden activar Entra ID + Azure RBAC) | `az aks update --enable-azure-rbac` | **Contributor** o **Azure Kubernetes Service Contributor Role** en el clúster | Portal → clúster AKS → **Access control (IAM)** |
 
 > La persona que creó el SRE Agent ya tiene **SRE Agent Administrator** automáticamente. La 1 y la 2
@@ -178,7 +184,7 @@ igualmente (no duplica asignaciones) o rellenad `APPROVED_CLUSTERS` a mano.
 | El rol PIM está asignado pero falla | Rol **elegible**, no activado | Activarlo en PIM, esperar 1–2 min y volver a ejecutar |
 | `RoleAssignmentExists` | Ya estaba asignado | Correcto, se puede ignorar |
 | El script termina OK pero el agente da **403** | Propagación | Esperar **5–10 min** y repetir la prueba |
-| No se puede guardar la herramienta o el subagente en el Builder | Falta el rol del SRE Agent | **SRE Agent Administrator** (o Author + Standard User) en el recurso del SRE Agent |
+| *Save* / *Create tool* en gris en la herramienta, o no se puede guardar el skill o el subagente | Aún no se ha pulsado **Test** en el playground de la herramienta, o falta el rol del SRE Agent | Primero **Test**; si sigue en gris tras un Test correcto, **SRE Agent Administrator** (o Author + Standard User) en el recurso del SRE Agent |
 
 ---
 
@@ -190,15 +196,17 @@ Si ya creasteis la herramienta `generate-aks-waf-report`, el skill `aks-waf-live
 | # | Qué | Dónde | Cambio |
 |---|---|---|---|
 | 1 | **Permisos** | PowerShell | Ejecutar el **nuevo** [`grant-aks-permissions.ps1`](grant-aks-permissions.ps1) sobre el Management Group o la lista de suscripciones |
-| 2 | **Configuración** | `generate-aks-waf-report.py` (el **nuevo**) | Sustituir las 5 variables marcadas con `(*)` por el contenido de `approved-clusters.generated.py` |
+| 2 | **Configuración** | `generate-aks-waf-report.py` (el **nuevo**) | Pegar `approved-clusters.generated.py` encima de la línea que cierra el bloque (sin borrar nada) y poner `kubernetes_enabled: False` |
 | 3 | **Código de la herramienta** | Portal → herramienta `generate-aks-waf-report` → **Code** | Borrar todo y pegar el `.py` nuevo completo |
-| 4 | **Parámetro `cluster_name`** | Misma herramienta → parámetros | **Quitar el enum**: debe quedar como texto libre (`string`) |
-| 5 | **Skill** | Portal → skill `aks-waf-live` | Sustituir el cuerpo por el nuevo [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md) |
+| 4 | **Parámetros** (`cluster_name` sin enum) | Misma herramienta → pestaña **Test playground** | **Automático** al pegar el `.py` nuevo: comprobad que aparecen los 12 parámetros, incluidos `cluster_name` y `cluster_names` (texto libre) |
+| 5 | **Skill** | Portal → skill `aks-waf-live` | Pegar el nuevo [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md) y **después** volver a elegir la herramienta |
 | 6 | **Subagente** | Portal → subagente `aks-waf-live` → **Instructions** | Sustituir por el bloque de [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md#copy-ready-instructions) |
 | 7 | **Forma de pedirlo** | Chat | Usar los [prompts de flota](#prompts-para-usarlo) (listar con paginación, lotes de 5, resumen) |
 
 > ⚠️ **No reutilicéis el `.py` antiguo** añadiendo clústeres a mano: el antiguo no sabe ir a otra
 > suscripción. Usad el `.py` de esta carpeta, que es el que entiende `subscription_id` por clúster.
+> Y si lo pegasteis antes del 16/11/2026, volved a pegarlo: el actual trae la corrección para el
+> error `identity_mismatch`.
 
 ### Paso A1 · Permisos en todas las suscripciones
 
@@ -250,38 +258,53 @@ Ejemplo de `aks-auth-modes.csv`:
 | aaaaaaaa-… | rg-a | aks-shared | AVISO: Entra ID con RBAC de Kubernetes → workloads «No evaluado» |
 | bbbbbbbb-… | rg-b | aks-shared | AVISO: sin Entra ID → solo parte ARM; workloads «No evaluado» |
 
+> **Hoy (16/11/2026)** los workloads salen «No evaluado» también en los clústeres `OK`: la
+> plataforma no deja llegar a la API de Kubernetes (HTTP 502). No es de permisos: ver
+> [Kubernetes hoy](#kubernetes-hoy-http-502-de-la-plataforma).
+
 > - Se puede **volver a ejecutar** sin problema: no duplica asignaciones. Hacedlo cuando haya
 >   clústeres nuevos, para regenerar la lista aprobada.
 > - Si algo falla (p. ej. falta de permisos en una suscripción), sigue con el resto y al final
 >   lista lo que falló.
 > - Los permisos tardan **5–10 minutos** en propagarse.
+> - Al final avisa de que `cluster_name` debe ser texto libre (sin enum): hoy se cumple solo
+>   ([A4](#paso-a4--parámetros-automáticos-cluster_name-sin-enum)).
 
 ### Paso A2 · Pegar la configuración en el `.py` nuevo
 
 Abrid [`generate-aks-waf-report.py`](generate-aks-waf-report.py) con un editor (VS Code, Notepad++).
-Al principio está el bloque `CONFIGURACION (editar solo este bloque)`. Hay que:
+Al principio está el bloque `CONFIGURACION GESTAMP (editar solo este bloque)`. Hay que:
 
-1. Sustituir las **5 variables marcadas con `(*)`** (`SUBSCRIPTION_ID`, `TENANT_ID`,
-   `MANAGED_IDENTITY_CLIENT_ID`, `CLUSTER_DEFAULTS` y `APPROVED_CLUSTERS`) por el contenido de
-   `approved-clusters.generated.py`. Lo más fácil: borrar esas 5 variables enteras del `.py` y
-   pegar en su lugar el fichero generado completo.
-2. Poner vuestro nombre en `CLIENT_NAME` (aparece en el informe). El logo es opcional.
-3. (Opcional) Marcar el entorno de clústeres concretos añadiendo `"environment": "PRODUCTION"` o
+1. Pegar el contenido completo de `approved-clusters.generated.py` **justo encima de la línea
+   `# ====…` que cierra el bloque** (la línea 313, justo debajo de `APPROVED_CLUSTERS`), **sin borrar
+   nada**. Python usa la última definición: lo pegado sustituye a las **5 variables marcadas con
+   `(*)`** (`SUBSCRIPTION_ID`, `TENANT_ID`, `MANAGED_IDENTITY_CLIENT_ID`, `CLUSTER_DEFAULTS` y
+   `APPROVED_CLUSTERS`).
+2. **Hoy, recomendado:** en lo pegado, cambiar `"kubernetes_enabled": True` por
+   `"kubernetes_enabled": False` (ver [Kubernetes hoy](#kubernetes-hoy-http-502-de-la-plataforma)).
+3. `CLIENT_NAME` ya es `"Gestamp"` y el logo ya está incluido: no hay que tocarlos.
+4. (Opcional) Marcar el entorno de clústeres concretos añadiendo `"environment": "PRODUCTION"` o
    `"LAB"` en su línea.
 
-Así queda el bloque (ejemplo con 3 clústeres en 2 suscripciones):
+Borrar antes las 5 variables de ejemplo es opcional. Lo que **no** hay que hacer es borrar todo el
+tramo entre `SUBSCRIPTION_ID` y `APPROVED_CLUSTERS`: en medio están `CLIENT_NAME` y el logo, y el
+fichero falla con `NameError: name 'CLIENT_LOGO_ALT' is not defined`.
+
+Así queda el final del bloque (ejemplo con 3 clústeres en 2 suscripciones):
 
 ```python
-# ====================== CONFIGURACION (editar solo este bloque) ======================
-SUBSCRIPTION_ID = "aaaaaaaa-0000-0000-0000-000000000001"         # (*) suscripción por defecto
-TENANT_ID = "11111111-1111-1111-1111-111111111111"               # (*) tenant
-MANAGED_IDENTITY_CLIENT_ID = "33333333-3333-3333-3333-333333333333"  # (*) Client ID del SRE Agent
-CLIENT_NAME = "Mi empresa"
-CLIENT_LOGO_DATA_URI = ""
-CLIENT_LOGO_ALT = "Logotipo del cliente"
-CLUSTER_DEFAULTS = {                                             # (*)
+# ====================== CONFIGURACION GESTAMP (editar solo este bloque) ======================
+# (aquí sigue todo lo que ya trae el fichero, sin borrar nada: los valores <...> de ejemplo,
+#  CLIENT_NAME = "Gestamp", el logo y el APPROVED_CLUSTERS de ejemplo, hasta su "}")
+# ---- lo pegado: approved-clusters.generated.py completo ----
+# Generado por grant-aks-permissions.ps1 el 2026-11-16 10:00: 3 AKS en 2 suscripciones.
+# Sustituye en el bloque CONFIGURACION de generate-aks-waf-report.py estas 5 variables.
+SUBSCRIPTION_ID = "aaaaaaaa-0000-0000-0000-000000000001"
+TENANT_ID = "11111111-1111-1111-1111-111111111111"
+MANAGED_IDENTITY_CLIENT_ID = "33333333-3333-3333-3333-333333333333"
+CLUSTER_DEFAULTS = {
     "environment": "UNSPECIFIED",
-    "kubernetes_enabled": True,
+    "kubernetes_enabled": False,           # el script pone True: cambiadlo a False (Kubernetes hoy)
     "include_node_resource_group": True,
     "advisor_enabled": True,
     "approved_related_resource_ids": [],
@@ -290,7 +313,7 @@ CLUSTER_DEFAULTS = {                                             # (*)
     "cost_timeframe": "month_to_date",
     "requirements": {},
 }
-APPROVED_CLUSTERS = {                                            # (*)
+APPROVED_CLUSTERS = {
     "aks-pro-01": {"resource_group": "rg-a", "subscription_id": "aaaaaaaa-0000-0000-0000-000000000001", "environment": "PRODUCTION"},
     "aaaaaaaa-aks-shared": {"resource_group": "rg-a", "subscription_id": "aaaaaaaa-0000-0000-0000-000000000001", "aks_name": "aks-shared"},
     "bbbbbbbb-aks-shared": {"resource_group": "rg-b", "subscription_id": "bbbbbbbb-0000-0000-0000-000000000002", "aks_name": "aks-shared"},
@@ -302,41 +325,51 @@ APPROVED_CLUSTERS = {                                            # (*)
 > - Cada variable en **su propia línea**. Si queda `..."CLIENT_NAME = "..."` en la misma línea,
 >   la prueba da `SyntaxError: invalid syntax`.
 > - `environment` solo admite exactamente `LAB`, `PRODUCTION` o `UNSPECIFIED`.
+> - No borréis el tramo entero entre `SUBSCRIPTION_ID` y `APPROVED_CLUSTERS` (`NameError`).
 > - No toquéis nada por debajo de la línea `# =====…` que cierra el bloque.
 
 ### Paso A3 · Pegar el código nuevo en la herramienta
 
-1. **sre.azure.com → vuestro agente → Builder → Agent Canvas**.
-2. En **Canvas view**, clic en el nodo **`generate-aks-waf-report`** (o en **Table view**, buscadla)
-   y abridla para editar (icono de lápiz).
-3. Pestaña **Code**: seleccionad todo (`Ctrl+A`), borrad y pegad el `.py` completo editado en A2.
-4. Comprobad que **Timeout = 900** y que **Identity** sigue en **Off** (ver capturas en
-   [B3](#paso-b3--crear-la-herramienta-python)).
+1. **sre.azure.com → vuestro agente → Build + configure → Agent Canvas** (antes *Builder*).
+2. **Table view** → tarjeta **Python tools** (o «…» → *Python tools*) → buscad
+   **`generate-aks-waf-report`** → clic en el nombre → lápiz. (También en **Canvas view**: pastilla
+   *Subagent* → `aks-waf-live` → nodo **`generate-aks-waf-report`** → lápiz.)
+3. Se abre **Edit Python tool** (pestañas *Code / Test playground / Identity*). En **Code**: clic en
+   el editor, `Ctrl+A` y pegad el `.py` completo editado en A2. No uséis *Generate*.
+4. Comprobad que **Timeout (seconds) = 900** (el máximo) y que, en **Identity**, **Enable Azure
+   Identity** sigue en **Off** (ver el aviso y las capturas en [B3](#paso-b3--crear-la-herramienta-python)).
 
-### Paso A4 · Quitar el enum de `cluster_name`
+### Paso A4 · Parámetros automáticos (`cluster_name` sin enum)
 
-En la misma herramienta, en la lista de parámetros, abrid `cluster_name`:
+Ya no hay editor de parámetros ni de enum: al pegar el `.py` nuevo, el portal saca los 12
+parámetros de `def main(...)`. `cluster_name` y `cluster_names` quedan como **texto libre** (sin
+enum), que es lo que hace falta con 30+ suscripciones: mantener ahí cientos de nombres no sería
+viable y **no hace falta**, porque el propio código rechaza cualquier nombre que no esté en
+`APPROVED_CLUSTERS` (`invalid_parameter`).
 
-- Tipo: **string**.
-- **Borrad los valores permitidos (enum)**. Con 30+ suscripciones, mantener ahí cientos de
-  nombres no es viable y **no hace falta**: el propio código rechaza cualquier nombre que no esté
-  en `APPROVED_CLUSTERS` (`invalid_parameter`).
-- Valor por defecto: vacío.
+Comprobadlo en la pestaña **Test playground**: deben salir 12 cajas, incluidas `cluster_name` y
+`cluster_names`. Referencia completa: [`tool-parameters.schema.json`](tool-parameters.schema.json).
 
-Si existe el parámetro `cluster_names` (plural), dejadlo también como `string` sin enum. Si no
-existe, añadidlo: `string`, por defecto vacío. Referencia completa:
-[`tool-parameters.schema.json`](tool-parameters.schema.json).
-
-Guardad y haced las **3 pruebas** de [Test playground](#-test-playground-qué-valores-poner-en-cada-parámetro)
+Haced las **3 pruebas** de [Test playground](#-test-playground-qué-valores-poner-en-cada-parámetro)
 (la primera es `operation = list_clusters`; debe devolver `status: ok`, `total` = número de
-clústeres y `subscription_count` = número de suscripciones). Después **Save**.
+clústeres y `subscription_count` = número de suscripciones). Después **Save** (sigue en gris hasta
+que pulsáis **Test**).
 
 ### Paso A5 · Actualizar el skill
 
-**Builder → Agent Canvas → Table view → pestaña Skills → `aks-waf-live` → lápiz (editar)**.
-Sustituid el contenido de `SKILL.md` por el de [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md)
-(incluye la nueva sección *Large fleets*). La herramienta adjunta sigue siendo solo
-`generate-aks-waf-report`.
+**Agent Canvas → Table view → pestaña Skills** → buscad `aks-waf-live` → lápiz → **Edit Skill**. El
+orden importa:
+
+1. En el editor **SKILL.md** (a la derecha): `Ctrl+A` y pegad
+   [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md) (incluye la nueva sección
+   *Large fleets*).
+2. **Después**: **Choose tools** → buscad `generate-aks-waf-report` → desplegad el grupo
+   **PythonFunctionTool (n)** → marcad solo esa herramienta (nunca la casilla del grupo) →
+   **Close panel**.
+3. Comprobad el chip de la herramienta y que el editor muestre `tools:` → **Save**.
+
+Si se hace al revés, al pegar el `SKILL.md` completo se sustituye su cabecera (*front matter*) y la
+herramienta desaparece del skill. La herramienta adjunta sigue siendo solo `generate-aks-waf-report`.
 
 ![Skill guardado](images/aks04-step03-skill-readback.png)
 
@@ -344,9 +377,18 @@ Sustituid el contenido de `SKILL.md` por el de [`skills/aks-waf-live/SKILL.md`](
 
 ### Paso A6 · Actualizar el subagente
 
-**Table view → pestaña Sub Agents → `aks-waf-live` → lápiz (editar)**. En **Instructions**, borrad
-el texto y pegad el bloque de [`subagent-instructions-and-prompts.md` → *Copy-ready instructions*](subagent-instructions-and-prompts.md#copy-ready-instructions).
-Las nuevas instrucciones añaden cómo paginar la flota y revisar por lotes de 5.
+**Table view → pestaña Sub Agents** → buscad `aks-waf-live` → lápiz (o «…» de la fila → *Edit*) →
+**Edit custom agent** (pestañas *Form / YAML*). En **Instructions**, `Ctrl+A` y pegad el bloque de
+[`subagent-instructions-and-prompts.md` → *Copy-ready instructions*](subagent-instructions-and-prompts.md#copy-ready-instructions).
+Comprobad los chips (skill `aks-waf-live` y herramienta `generate-aks-waf-report`) → **Save**. No uséis
+*Refine with AI* ni *View AI suggestions*. Las nuevas instrucciones añaden cómo paginar la flota y
+revisar por lotes de 5.
+
+> En *Table view*, la columna *Tools* puede decir «Inherits 165 tools · 76 skills» aunque el
+> subagente tenga 1 herramienta y 1 skill: lo que vale son los chips del formulario.
+
+(Opcional) Comprobad en **Build + configure → Extensions → Tools** → pestaña *Custom tools* que la
+herramienta sale **On / Allow**, y en **Extensions → Skills** → *Custom skills* que el skill sale **On**.
 
 ![Subagente guardado](images/aks04-step04-agent-readback.png)
 
@@ -355,7 +397,8 @@ skill `aks-waf-live`.
 
 ### Paso A7 · Probar
 
-Abrid un **chat nuevo** y usad el [prompt de flota](#prompts-para-usarlo).
+Abrid un **chat nuevo**, elegid el subagente con **/agent** → `aks-waf-live` (comprobad el chip
+**Agent: aks-waf-live**) y usad el [prompt de flota](#prompts-para-usarlo).
 
 ---
 
@@ -372,8 +415,10 @@ az account set --subscription "<id-suscripcion>"
 .\grant-aks-permissions.ps1 -IdentityClientId "<CLIENT_ID_SRE_AGENT>"
 ```
 
-**Dónde está el Client ID:** sre.azure.com → vuestro agente → **Settings → Azure settings →
-Managed Identity → Go to Identity → Overview → Client ID** (no el *Object ID*).
+**Dónde está el Client ID:** en el portal del agente ya no hay *Settings*. Copiadlo de la línea
+`MANAGED_IDENTITY_CLIENT_ID = "…"` del código actual de la herramienta (si ya existe), o del portal de
+Azure → grupo de recursos del agente → identidad administrada `id-…` → **Overview → Client ID**
+(no el *Object ID*).
 
 ### Paso B2 · Configurar el `.py`
 
@@ -381,29 +426,33 @@ Igual que el [Paso A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo).
 
 ### Paso B3 · Crear la herramienta Python
 
-1. **Builder → Agent Canvas → flecha junto a Create → Tool → Python tool**.
+1. **Build + configure → Agent Canvas → Create ▾** (la flecha junto a *Create*) **→ Tool › →
+   Python tool**.
 
    ![Menú Create > Tool > Python tool](images/aks04-step02-01-python-menu.png)
 
-   **1–2** Builder › Agent Canvas · **3** flecha de **Create** · **4** **Python tool**.
+   **1–2** Builder › Agent Canvas · **3** flecha de **Create** · **4** **Python tool**. *(Captura de
+   octubre: hoy el menú se llama **Build + configure**.)*
 
-2. Pestaña **Code**:
-   - **Name:** `generate-aks-waf-report`
+2. Pestaña **Code** (el diálogo tiene 3 pestañas: *Code / Test playground / Identity*):
+   - **Tool Name:** `generate-aks-waf-report` (el campo admite 36 caracteres).
+   - **Timeout (seconds):** `900` (viene 120; 900 es el máximo).
    - **Description** (copiar tal cual):
      ```text
      Read-only AKS architecture/configuration review for the fixed approved clusters (multi-subscription) and associated resources. Collect source-qualified ARM, Kubernetes and optional ActualCost evidence; return offline HTML, complete JSON, failed-findings CSV and inventory CSV, or bounded typed queries. No remediation.
      ```
    - **Code:** pegar el `.py` **completo** ya configurado (no usar *Generate*).
-   - **Requirements:** el contenido de [`requirements.txt`](requirements.txt).
-   - **Timeout:** `900` segundos.
+   - No hay campo *Requirements*: el entorno Python del SRE Agent ya trae azure-identity, PyYAML y
+     Pillow ([`requirements.txt`](requirements.txt) es solo informativo).
 
    ![Pestaña Code](images/aks04-step02-02-code.png)
 
    **1** nombre · **2** pestaña Code · **3** editor donde se pega el fichero completo (en la captura
    el código está tapado a propósito).
 
-3. **Parámetros** (12). Los tipos y valores por defecto están en
-   [`tool-parameters.schema.json`](tool-parameters.schema.json):
+3. **Parámetros (12): automáticos.** No hay editor de parámetros: salen de `def main(...)` al pegar
+   el código. Tipos y valores por defecto (referencia en
+   [`tool-parameters.schema.json`](tool-parameters.schema.json)):
 
    | Parámetro | Tipo | Por defecto | Notas |
    |---|---|---|---|
@@ -423,7 +472,8 @@ Igual que el [Paso A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo).
    ![Parámetros en Test playground](images/aks04-step02-03-typed-parameters.png)
 
    En **Test playground** se ven los 12 parámetros; **1–3** `status`, `limit` y `offset` con sus
-   valores por defecto (`all`, `25`, `0`).
+   valores por defecto (`all`, `25`, `0`). *(Captura de octubre: hoy las 12 cajas salen vacías y hay
+   que escribir cada valor.)*
 
 4. Pestaña **Identity**: dejar **Enable Azure Identity en Off**. El código ya usa la identidad
    del SRE Agent mediante su Client ID.
@@ -432,55 +482,81 @@ Igual que el [Paso A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo).
 
    **1** pestaña Identity · **2** interruptor en **Off**.
 
-5. **Test playground**: haced las [3 pruebas con los valores exactos](#-test-playground-qué-valores-poner-en-cada-parámetro)
-   (configuración → permisos → informe). Después **Create tool**.
+   > ⚠️ No lo encendáis, ni siquiera para mirar: el portal añade 4 líneas al principio del código
+   > (`# Azure Identity Authentication`, `from azure.identity import DefaultAzureCredential`,
+   > `credential = DefaultAzureCredential()` y `AZURE_ARM_TOKEN = …`) que se quedan aunque lo
+   > volváis a apagar. Si pasa, borradlas en la pestaña **Code**.
+
+5. Pestaña **Test playground** → **Test**: haced las [3 pruebas con los valores exactos](#-test-playground-qué-valores-poner-en-cada-parámetro)
+   (configuración → permisos → informe). Después **Create tool** (sigue en gris hasta pulsar **Test**).
 
 ### Paso B4 · Crear el skill
 
-**Create → Skill**:
+**Build + configure → Agent Canvas → Create ▾ → Skill** → **Create skill**. El orden importa:
 
-- **Name:** `aks-waf-live`
-- **Contenido:** pegar [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md).
-- **Tools:** solo `generate-aks-waf-report`.
+1. Pegad [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md) en el editor de la derecha
+   (rellena *Name* `aks-waf-live` y *Description* con su cabecera).
+2. **Después**: **Choose tools** → buscad `generate-aks-waf-report` → desplegad el grupo
+   **PythonFunctionTool (n)** → marcad solo esa herramienta (nunca la casilla del grupo) →
+   **Close panel**.
+3. Comprobad el chip y que el editor muestre `tools:` → **Create**.
+
+Si se elige la herramienta antes de pegar, al pegar el `SKILL.md` se sustituye la cabecera y la
+herramienta desaparece.
 
 ### Paso B5 · Crear el subagente
 
-**Create → Custom Agent**:
+Botón **Create** (abre directamente *Create a custom agent*; también **Create ▾ → Custom Agent**):
 
-- **Name:** `aks-waf-live`
+- **Custom agent name:** `aks-waf-live`
 - **Instructions:** el bloque *Copy-ready instructions* de
   [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md#copy-ready-instructions).
-- **Tools:** **solo** `generate-aks-waf-report` (no dejarlo vacío: vacío puede heredar herramientas globales).
-- **Skills:** **solo** `aks-waf-live`.
+- **Choose tools:** **solo** `generate-aks-waf-report` (desplegad los grupos; no lo dejéis vacío:
+  vacío puede heredar herramientas globales).
+- **Choose skills:** **solo** `aks-waf-live`.
+- No uséis *Refine with AI* ni *View AI suggestions*. Después, **Create**.
 
 (Capturas de cómo queda: ver [A5](#paso-a5--actualizar-el-skill) y [A6](#paso-a6--actualizar-el-subagente).)
 
 ### Paso B6 · Probar en un chat nuevo
 
+**New chat** → escribid **/agent** → elegid `aks-waf-live` → comprobad el chip **Agent: aks-waf-live**
+→ pegad el prompt. (Escribir `@` ya no abre selector, y `/aks-waf-live` bajo *SKILLS* invoca el
+skill, no el subagente.)
+
 ```text
-@aks-waf-live Lista los clústeres aprobados con operation=list_clusters.
+Lista los clústeres aprobados con operation=list_clusters.
 ```
 
 Y después un informe de uno:
 
 ```text
-@aks-waf-live Genera la revisión completa de arquitectura y configuración de AKS para <nombre-aks> con operation=report.
+Genera la revisión completa de arquitectura y configuración de AKS para <nombre-aks> con operation=report.
 ```
 
 ---
 
 ## ⭐ Test playground: qué valores poner en cada parámetro
 
-En la herramienta (**Builder → Agent Canvas → `generate-aks-waf-report` → Test playground**) se
-ven los 12 parámetros con un valor ya escrito. **Ese valor es el correcto para casi todos.** Solo
-hay que cambiar 1 o 2 campos según la prueba.
+Es la **pestaña Test playground** del diálogo de la herramienta (**Build + configure → Agent Canvas →
+Table view → Python tools → `generate-aks-waf-report` → lápiz → Test playground**), no el botón
+*Test playground* de la barra del Agent Canvas, que es otra cosa. Pulsad **Test**: salen 12 cajas
+**vacías** (sin valores por defecto ni desplegables). **Escribid todos los valores de la tabla de
+cada prueba**; lo marcado con ← es lo que cambia entre pruebas. **Save** / **Create tool** siguen en
+gris hasta que la prueba se ha ejecutado (no es un problema de rol).
+
+> ⏱️ **Límite del playground:** la prueba se corta a los **~100 s con HTTP 504**, aunque el Timeout
+> sea 900. Con Kubernetes activado, las pruebas 2 y 3 tardan hoy 84–100 s por clúster en marcha; con
+> `kubernetes_enabled: False` ([A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo)) bajan a ~15 s.
+> Si aun así da 504, no es un fallo de la herramienta: lanzad el informe desde el chat
+> ([B6](#paso-b6--probar-en-un-chat-nuevo)), donde puede tardar unos minutos.
 
 ### Reglas para que no dé error
 
-1. **Nunca dejéis vacíos** `operation`, `view`, `area`, `level`, `severity` ni `status`. Vacío da
-   `invalid_parameter … must use its declared enum`. Sus valores son `report`, `summary`, `all`,
-   `all`, `all`, `all`.
-2. **`limit` y `offset` son números**: `25` y `0`. Vacíos o con texto dan error.
+1. **Escribid todos los valores.** `operation`, `view`, `area`, `level`, `severity` y `status`
+   nunca vacíos; sus valores son `report`, `summary`, `all`, `all`, `all`, `all` salvo lo que cambia
+   en cada prueba. `invalid_parameter … must use its declared enum` = valor mal escrito en uno de ellos.
+2. **`limit` y `offset` son números**: `25` y `0`. Con texto, la plataforma da un error de tipo.
 3. Con **`report`** y **`list_clusters`**, los filtros se quedan **por defecto**: `view=summary`,
    `area/level/severity/status=all`, `namespace` y `workload_name` vacíos, `limit=25`, `offset=0`. Si
    cambiáis uno, da `invalid_combination`. Solo `list_clusters` permite cambiar `limit` y `offset`.
@@ -505,7 +581,7 @@ Valida que el bloque CONFIGURACION está bien pegado y os da los nombres exactos
 | `level` | `all` |
 | `severity` | `all` |
 | `status` | `all` |
-| `limit` | `25` (o `100` para ver más por página) |
+| `limit` | `25` |
 | `offset` | `0` |
 
 Resultado esperado (resumido):
@@ -516,67 +592,81 @@ Resultado esperado (resumido):
   "operation": "list_clusters",
   "total": 34,
   "subscription_count": 31,
-  "returned": 25,
-  "next_offset": 25,
+  "returned": 18,
+  "next_offset": 18,
   "available_clusters": [
     { "cluster_name": "aks-pro-01", "resource_group": "rg-a",
-      "subscription_id": "aaaaaaaa-…", "environment": "PRODUCTION", "cluster_id": "/subscriptions/…" }
+      "subscription_id": "aaaaaaaa-…", "environment": "PRODUCTION" }
   ]
 }
 ```
 
 - `total` = número de clústeres que pegasteis; `subscription_count` = número de suscripciones.
-- Si `next_offset` no es `null`, hay más: repetid con `offset` = ese número.
+- Si `next_offset` no es `null`, hay más: repetid con `offset` = ese número hasta que sea `null`.
+  `returned` puede ser **menor que `limit`** (p. ej. 18, también con `limit` = `100`): la respuesta
+  tiene un tamaño máximo. Con más de 5 clústeres no sale `cluster_id`.
 - **Copiad un `cluster_name`** para las pruebas 2 y 3.
 
-### Prueba 2 · Permisos (1–3 min)
+### Prueba 2 · Permisos
 
 Valida que la identidad del agente puede leer ese clúster: es la que confirma que los **roles**
-están bien.
+están bien. Tarda ~15 s por clúster con `kubernetes_enabled: False`; con Kubernetes activado,
+84–100 s (puede dar 504: ver el límite de arriba).
 
 | Parámetro | Valor |
 |---|---|
 | `operation` | **`query`** ← cambiar |
 | `view` | **`coverage`** ← cambiar |
 | `cluster_name` | **`<nombre copiado de la prueba 1>`** ← cambiar |
-| resto | por defecto (`cluster_names`, `namespace` y `workload_name` vacíos; `all`; `25`; `0`) |
+| resto | los de la prueba 1: `cluster_names`, `namespace` y `workload_name` vacíos; `all`; `25`; `0` |
 
 Resultado esperado: `status: ok` y una fila por fuente (ARM, Kubernetes, Advisor, costes…) con su
-estado:
+estado. Cada respuesta trae solo unas pocas fuentes: si `next_offset` no es `null`, repetid con ese
+`offset`, o poned `status` = `denied` (o `error`) para ver solo las que fallan.
 
 | Estado de la fuente | Qué significa | Qué hacer |
 |---|---|---|
 | `complete` | Leída entera | Nada |
 | `partial` | Leída en parte | Ver el motivo en la fila |
 | `denied` | **Sin permiso** | Revisar roles ([R3](#r3--roles-que-recibe-la-identidad-del-sre-agent-todos-de-solo-lectura)/[R4](#r4--comprobar-que-la-identidad-del-agente-tiene-sus-roles)); si se acaban de dar, esperar 10 min |
-| `not_configured` | Desactivada en la configuración (p. ej. costes sin `-IncludeCost`) | Normal si lo habéis decidido así |
-| `error` | Fallo de la fuente | Ver el mensaje; si es Kubernetes, ver [Entra ID + Azure RBAC](#entra-id--azure-rbac-en-los-clústeres) |
+| `not_configured` | Desactivada en la configuración (p. ej. costes sin `-IncludeCost`, o `kube_*` con `kubernetes_enabled: False`) | Normal si lo habéis decidido así |
+| `error` | Fallo de la fuente | Ver el mensaje. Hoy las fuentes `kube_*` salen en `error` con **HTTP 502**: es la plataforma, no los permisos ni el clúster ([Kubernetes hoy](#kubernetes-hoy-http-502-de-la-plataforma)). Si Kubernetes da `entra_required`, 401 o 403, ver [Entra ID + Azure RBAC](#entra-id--azure-rbac-en-los-clústeres) |
 
-### Prueba 3 · Informe completo (2–10 min)
+### Prueba 3 · Informe completo
+
+~15 s por clúster con `kubernetes_enabled: False`. Si el playground da 504, hacedla desde el chat.
 
 | Parámetro | Valor |
 |---|---|
 | `operation` | `report` (el valor por defecto) |
 | `cluster_name` | **`<nombre copiado de la prueba 1>`** ← cambiar |
-| resto | **todo por defecto** (regla 3) |
+| resto | **todo por defecto**, escrito en cada caja (regla 3) |
 
-Debe terminar con `status: ok`. Los 4 ficheros descargables se ven mejor desde el **chat** con el
+Debe terminar con `status: ok` o `partial` (`partial` = alguna fuente sin leer, p. ej. Kubernetes;
+los 4 ficheros se generan igual). Los 4 ficheros descargables se ven mejor desde el **chat** con el
 subagente ([Paso B6](#paso-b6--probar-en-un-chat-nuevo)).
 
 ### Errores del playground y cómo arreglarlos
 
 | Error que devuelve | Causa | Arreglo |
 |---|---|---|
+| `identity_mismatch` (en cuanto se lee Azure: `query`, `report`) | Se está usando un `.py` anterior al 16/11/2026 | Pegad el `.py` actual del repositorio ([A3](#paso-a3--pegar-el-código-nuevo-en-la-herramienta)) |
+| HTTP 504 a los ~100 s | Límite del playground, no de la herramienta | `kubernetes_enabled: False` ([A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo)) o lanzad el informe desde el chat |
+| Fuentes `kube_*` en `error` (HTTP 502) | Limitación actual de la plataforma, no de permisos | `kubernetes_enabled: False` ([Kubernetes hoy](#kubernetes-hoy-http-502-de-la-plataforma)) |
+| *Save* / *Create tool* en gris | Aún no se ha pulsado **Test** | Primero **Test**; si sigue en gris tras un Test correcto, rol **SRE Agent Administrator** |
 | `SyntaxError: invalid syntax` | Dos variables en la misma línea al pegar | Una variable por línea en el bloque CONFIGURACION |
+| `NameError: name 'CLIENT_LOGO_ALT' is not defined` | Al pegar se borró el tramo con `CLIENT_NAME` y el logo | Partid del `.py` del repositorio y pegad encima de la línea de cierre, sin borrar ([A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo)) |
 | `configuration_required` | Quedan valores `<...>` o un valor mal escrito (p. ej. `environment`) | Pegar el bloque generado ([A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo)) |
-| `invalid_parameter` … `must use its declared enum` | Un campo vacío o con un valor no permitido | Poner su valor por defecto (regla 1) |
-| `invalid_parameter` … `limit must be an integer` | `limit` vacío o con texto | `25` |
+| `invalid_parameter` … `must use its declared enum` | Valor mal escrito en `operation`, `view`, `area`, `level`, `severity` o `status` | Escribid el valor exacto (regla 1) |
+| Error de tipo de la plataforma (`Parameter 'limit' expected <class 'int'>…`) | Texto en `limit` u `offset` | Son números: `25` y `0` |
+| `invalid_parameter` … `limit must be an integer from 1 to 100` | `limit` fuera de 1–100 | `25` |
 | `invalid_parameter` … `must exactly match the fixed operator allowlist` | El nombre no está en la lista aprobada | Copiarlo tal cual de la prueba 1 |
 | `invalid_parameter` … `without spaces` | `cluster_names` con espacios o más de 5 | `aks-a,aks-b` sin espacios, máximo 5 |
 | `invalid_combination` … `report cannot be narrowed` | En `report` se cambió `view`, `area`, `limit`… | Dejar todo por defecto salvo el nombre |
 | `invalid_combination` … `list_clusters lists the complete fixed roster` | En `list_clusters` se puso un nombre | Vaciar `cluster_name` y `cluster_names` |
 | `invalid_combination` … `not both` | `cluster_name` y `cluster_names` rellenos a la vez | Usar solo uno |
 | Fuentes en `denied` / 403 | Roles sin dar o propagándose | [Roles R1–R6](#-roles-y-permisos-quién-necesita-qué-leer-antes-de-empezar) |
+| `azure_cost` con HTTP 429 | Cost Management limita las peticiones seguidas | Esperad unos minutos y repetid |
 
 ---
 
@@ -589,7 +679,7 @@ lo comprueba y lo deja en `aks-auth-modes.csv`.
 
 | Modo del clúster | ¿Qué sale en el informe? |
 |---|---|
-| Entra ID + **Azure RBAC** | Todo: clúster, workloads y recursos |
+| Entra ID + **Azure RBAC** | Todo: clúster, workloads y recursos (hoy, workloads «No evaluado» por el HTTP 502 de la plataforma: ver abajo) |
 | Entra ID + RBAC de Kubernetes | Clúster y recursos; workloads **No evaluado** |
 | Cuentas locales (sin Entra ID) | Clúster y recursos; workloads **No evaluado** |
 
@@ -612,39 +702,61 @@ Documentación: [Usar Azure RBAC para la autorización de Kubernetes](https://le
 > activarlo, los roles AKS que dio el script (Cluster User + RBAC Reader) ya sirven: no hay que
 > volver a ejecutarlo.
 
+### Kubernetes hoy: HTTP 502 de la plataforma
+
+> ⚠️ **Hoy (16/11/2026), las herramientas Python del SRE Agent no llegan a la API de Kubernetes de
+> AKS:** todas las fuentes `kube_*` devuelven **HTTP 502** desde la salida de la plataforma. **No es
+> un problema de permisos ni de configuración del clúster**: no repitáis el script ni cambiéis el
+> clúster (activar Entra ID + Azure RBAC no lo arregla). El informe se genera igual (`partial`), con
+> los workloads «No evaluado» y una cobertura baja (~15–20 %).
+>
+> **Recomendación:** después de pegar el bloque generado ([A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo)),
+> cambiad en `CLUSTER_DEFAULTS` `"kubernetes_enabled": True` por `"kubernetes_enabled": False`. El
+> resultado es el mismo (las fuentes `kube_*` salen `not_configured` en vez de `error`), pero cada
+> clúster tarda ~15 s en vez de ~85 s, las pruebas del playground no dan 504 y los lotes de 5 caben en
+> el límite interno de 240 s por informe. Si lo dejáis en `True`, usad lotes de 2.
+
 ---
 
 ## Prompts para usarlo
 
+**New chat** → **/agent** → elegid `aks-waf-live` → comprobad el chip **Agent: aks-waf-live** →
+pegad el prompt (sin `@`).
+
 **Toda la flota** (recomendado con 30+ suscripciones):
 
 ```text
-@aks-waf-live Lista todos los clústeres AKS aprobados con operation=list_clusters, limit=100,
+Lista todos los clústeres AKS aprobados con operation=list_clusters, limit=100,
 siguiendo next_offset hasta que sea null. Resume cuántos hay por suscripción y entorno.
 Después genera informes por lotes de hasta 5 clústeres (cluster_names) empezando por PRODUCTION
 y termina con un resumen de flota con puntuación y cobertura por lote. No extrapoles clústeres no revisados.
 ```
 
 > Con muchos clústeres, la revisión completa lleva tiempo (cada lote de 5 puede tardar varios
-> minutos). Es práctico ir **por suscripción o por entorno**:
+> minutos). Es práctico ir **por suscripción o por entorno**.
+>
+> ⚠️ Un informe tiene un límite interno de **240 s** para todo el lote. Los lotes de 5 caben con
+> `kubernetes_enabled: False` (~15 s por clúster). Si lo dejáis en `True` (~85 s por clúster en
+> marcha, por el HTTP 502 de Kubernetes), pedid **lotes de 2**: si no, los últimos clústeres del lote
+> quedan sin recopilar.
 
 ```text
-@aks-waf-live Lista los clústeres aprobados con operation=list_clusters y genera informes por lotes de 5
+Lista los clústeres aprobados con operation=list_clusters y genera informes por lotes de 5
 solo de los que estén en la suscripción <id-suscripción>. Al final, resume los hallazgos críticos y altos.
 ```
 
 **Varios clústeres concretos (máximo 5):**
 
 ```text
-@aks-waf-live Genera la revisión de AKS con operation=report y cluster_names=<aks-1>,<aks-2>,<aks-3>.
+Genera la revisión de AKS con operation=report y cluster_names=<aks-1>,<aks-2>,<aks-3>.
 ```
 
 **Preguntas sobre un clúster:**
 
 ```text
-@aks-waf-live Usa query/findings con area=security y status=failed para <aks-1>. Prioriza solo riesgos observados.
-@aks-waf-live Usa query/coverage para <aks-1>. ¿Qué fuentes fallaron o fueron parciales y por qué?
-@aks-waf-live Usa query/finops para <aks-1>. ¿Qué costes reales hay y qué candidatos de optimización?
+Usa query/findings con area=security y status=failed para <aks-1>. Prioriza solo riesgos observados.
+Usa query/coverage para <aks-1>. ¿Qué fuentes fallaron o fueron parciales y por qué?
+Usa query/finops para <aks-1>. ¿Qué costes reales hay y qué candidatos de optimización?
 ```
 
 Más prompts (ES/EN) en [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md).
@@ -678,13 +790,19 @@ El subagente entrega **4 ficheros descargables** en el chat:
 
 | Síntoma | Causa | Solución |
 |---|---|---|
+| `identity_mismatch` en cuanto se lee Azure | Se está usando un `.py` anterior al 16/11/2026 | Pegad el `.py` actual del repositorio ([A3](#paso-a3--pegar-el-código-nuevo-en-la-herramienta)) |
 | `SyntaxError: invalid syntax` al probar | Dos variables en la misma línea al pegar | Revisar el bloque CONFIGURACION: una variable por línea |
+| `NameError: name 'CLIENT_LOGO_ALT' is not defined` | Al pegar se borró el tramo con `CLIENT_NAME` y el logo | Partid del `.py` del repositorio y pegad sin borrar (Paso A2) |
 | `configuration_required` | Siguen los valores `<...>` de ejemplo | Pegar el bloque generado (Paso A2) |
 | `invalid_parameter` con un nombre | El clúster no está en `APPROVED_CLUSTERS` o tiene espacios | Usar el nombre exacto que devuelve `list_clusters` |
 | `invalid_resource_id` / 404 en un clúster de otra suscripción | `.py` antiguo, o falta `subscription_id` en esa línea | Usar el `.py` de esta carpeta y el bloque generado |
 | 403 en ARM | Permisos aún propagándose, o la suscripción no está en el alcance | Esperar 10 min; volver a ejecutar el script incluyendo esa suscripción |
-| Workloads «No evaluado» | El clúster no tiene Entra ID + Azure RBAC | Ver [esta sección](#entra-id--azure-rbac-en-los-clústeres) |
+| HTTP 504 en *Test playground* (~100 s) | Límite del playground, no de la herramienta | `kubernetes_enabled: False` o lanzad el informe desde el chat |
+| Workloads «No evaluado» y fuentes `kube_*` en `error` (HTTP 502) | Limitación actual de la plataforma, no de permisos | Nada que cambiar en el clúster; `kubernetes_enabled: False` ([Kubernetes hoy](#kubernetes-hoy-http-502-de-la-plataforma)) |
+| Workloads «No evaluado» con `entra_required`, 401 o 403 en Kubernetes | El clúster no tiene Entra ID + Azure RBAC | Ver [esta sección](#entra-id--azure-rbac-en-los-clústeres) |
+| Fuente `azure_cost` con HTTP 429 | Cost Management limita las peticiones seguidas (muchos informes seguidos) | Esperad unos minutos y repetid |
 | Sin costes | No se usó `-IncludeCost` o `cost_scope` es `disabled` | Volver a ejecutar con `-IncludeCost` y pegar el bloque nuevo |
+| *Save* / *Create tool* en gris | Aún no se ha pulsado **Test** en el playground | Primero **Test**; si sigue en gris tras un Test correcto, rol **SRE Agent Administrator** |
 | El subagente usa otras herramientas | El subagente tiene la lista de tools vacía | Seleccionar explícitamente solo `generate-aks-waf-report` |
 
 ---
@@ -695,8 +813,8 @@ El subagente entrega **4 ficheros descargables** en el chat:
 |---|---|
 | [`grant-aks-permissions.ps1`](grant-aks-permissions.ps1) | Permisos de solo lectura (MG / varias suscripciones) + genera la lista aprobada |
 | [`generate-aks-waf-report.py`](generate-aks-waf-report.py) | Herramienta Python (editar solo el bloque CONFIGURACION) |
-| [`requirements.txt`](requirements.txt) | Paquetes Python de la herramienta |
-| [`tool-parameters.schema.json`](tool-parameters.schema.json) | Los 12 parámetros |
+| [`requirements.txt`](requirements.txt) | Paquetes Python de la herramienta (informativo: el entorno del SRE Agent ya los trae) |
+| [`tool-parameters.schema.json`](tool-parameters.schema.json) | Los 12 parámetros (referencia; el portal los saca de `def main(...)`) |
 | [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md) | Skill |
 | [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md) | Instrucciones del subagente y prompts |
 | [`README-tecnico-EN.md`](README-tecnico-EN.md) | Documentación técnica completa (inglés): checks, fuentes, límites, seguridad |

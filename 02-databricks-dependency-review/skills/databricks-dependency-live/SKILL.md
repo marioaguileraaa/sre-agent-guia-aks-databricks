@@ -5,7 +5,7 @@ description: Read-only, evidence-qualified Azure Databricks dependency mapping, 
 
 # Azure Databricks dependency and configuration review
 
-Use ONLY `generate-databricks-dependency-report`. The operator must explicitly
+Use ONLY `databricks-dependency-report`. The operator must explicitly
 select that one tool and this skill for `databricks-dependency-live`; no
 inherited tools, shell, exec, generic Python, SQL execution tools, remediation
 connectors or role-grant tools.

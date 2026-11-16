@@ -16,7 +16,7 @@ tools. Read back the deployed skill and selected-tool list. Do not add shell,
 exec, generic Python, write connectors, another agent or a deployment tool.
 
 > [!NOTE]
-> **Dated SRE UI badge caveat:** In the live SRE Agent UI, Agent Canvas list/card summary badges can display inherited global rollups (for example, `131 tools` / `52 skills`) even when both native APIs, selected chips and the saved form policy enforce one explicit tool and skill (`tools`, `allowedSkills`, `addSystemSkills=false`, `disableDocumentRetrieval=true`). Verify the exact selected tool and skill **names** in the saved form and effective supported policy; the list summary badge is not authoritative restriction proof, and you must not modify globals to change it.
+> **Dated SRE UI badge caveat:** In the live SRE Agent UI, Agent Canvas list/card summary badges can display inherited global rollups (for example, `131 tools` / `52 skills`; today *Table view* may show `Inherits 165 tools · 76 skills`) even when both native APIs, selected chips and the saved form policy enforce one explicit tool and skill (`tools`, `allowedSkills`, `addSystemSkills=false`, `disableDocumentRetrieval=true`). Verify the exact selected tool and skill **names** in the saved form and effective supported policy; the list summary badge is not authoritative restriction proof, and you must not modify globals to change it.
 
 ## Copy-ready instructions
 
@@ -65,6 +65,11 @@ start/stop clusters, execute commands, reveal credentials or create issues/tasks
 Use the actual approved cluster name privately. The public label remains
 **CLIENTE**. None of these prompts authorizes changing Azure.
 
+In **New chat**, select the specialist with **/agent** → `aks-waf-live` and
+check the **Agent: aks-waf-live** chip before pasting a prompt. Typing `@` no
+longer opens a picker, and `/aks-waf-live` listed under *SKILLS* invokes the
+skill, not the specialist.
+
 List the fixed roster before choosing a scope. It is configuration metadata,
 not observed cluster health. Multi-cluster selection uses exact approved
 names; reports retain all selected snapshots and disclose failed cluster
@@ -78,7 +83,7 @@ Flota multi-suscripcion (decenas de suscripciones): pagina el roster y
 revisa por lotes de hasta cinco clusteres.
 
 ```text
-@aks-waf-live Lista todos los clusteres AKS aprobados con operation=list_clusters,
+Lista todos los clusteres AKS aprobados con operation=list_clusters,
 limit=100, siguiendo next_offset hasta que sea null. Resume cuantos hay por
 suscripcion y entorno. Despues genera informes por lotes de hasta 5 clusteres
 (cluster_names) empezando por PRODUCTION y termina con un resumen de flota con
@@ -98,7 +103,7 @@ puntuacion y cobertura por lote. No extrapoles clusteres no revisados.
 ```
 
 ```text
-@aks-waf-live Genera la revision de configuracion de AKS para
+Genera la revision de configuracion de AKS para
 <APPROVED_AKS_NAME> con operation=report. Cubre cluster, workloads y recursos
 asociados: buenas practicas, seguridad, FinOps y optimizacion, con los cinco
 pilares WAF. Entrega HTML, JSON completo, CSV de hallazgos y CSV de inventario.
@@ -110,7 +115,7 @@ Muestra cobertura, fuentes, No evaluado/No aplica y limites. No cambies nada.
 ```
 
 ```text
-@aks-waf-live Usa query/coverage para <APPROVED_AKS_NAME>. Que fuentes
+Usa query/coverage para <APPROVED_AKS_NAME>. Que fuentes
 fallaron o fueron parciales, con que codigo HTTP y que campos no podemos
 evaluar? Un 502/429 no es permiso denegado, y un 403 no significa cero objetos.
 ```
@@ -120,7 +125,7 @@ evaluar? Un 502/429 no es permiso denegado, y un 403 no significa cero objetos.
 ```
 
 ```text
-@aks-waf-live Usa query/findings con area=security y status=failed.
+Usa query/findings con area=security y status=failed.
 Prioriza solo riesgos observados con recurso, configuracion, fuente, hora,
 impacto cualificado y recomendacion Microsoft. No inventes hallazgos criticos.
 ```
@@ -130,7 +135,7 @@ impacto cualificado y recomendacion Microsoft. No inventes hallazgos criticos.
 ```
 
 ```text
-@aks-waf-live Usa query/workloads y query/findings para namespace=client-apps
+Usa query/workloads y query/findings para namespace=client-apps
 y workload_name=frontend. Distingue replicas deseadas, probes, requests,
 PDB/HPA/NetworkPolicy seleccionados y datos No evaluado. No infieras la
 configuracion de Kubernetes a partir de telemetria o del estado Running de ARM.
@@ -141,7 +146,7 @@ configuracion de Kubernetes a partir de telemetria o del estado Running de ARM.
 ```
 
 ```text
-@aks-waf-live Usa query/finops. Que mediciones tienen timestamp, ventana,
+Usa query/finops. Que mediciones tienen timestamp, ventana,
 unidad, muestra y denominador? Que costes tienen ResourceId y moneda reales?
 Separa candidatos de capacidad actual de infrautilizacion sostenida y de
 ahorro calculado. No compres planes, cambies SKU o elimines activos.
@@ -152,7 +157,7 @@ ahorro calculado. No compres planes, cambies SKU o elimines activos.
 ```
 
 ```text
-@aks-waf-live Usa query/summary y explica puntuacion y cobertura juntas.
+Usa query/summary y explica puntuacion y cobertura juntas.
 Cuantos indicadores se evaluaron, cuantos son No evaluado y No aplica?
 Explica por que esta puntuacion local no certifica la salud del cluster ni
 constituye el Azure Architecture Review oficial.
@@ -165,10 +170,12 @@ constituye el Azure Architecture Review oficial.
 ## English chat prompts
 
 Use the same private approved cluster names. The public client label remains
-**CLIENTE**, and every prompt below is strictly read-only.
+**CLIENTE**, and every prompt below is strictly read-only. Select the
+specialist with **/agent** → `aks-waf-live` (chip **Agent: aks-waf-live**)
+before pasting a prompt.
 
 ```text
-@aks-waf-live Use operation=list_clusters to list the fixed configured cluster
+Use operation=list_clusters to list the fixed configured cluster
 roster before choosing a scope. Explain why this roster is configuration
 metadata rather than observed cluster presence or health.
 ```
@@ -178,7 +185,7 @@ metadata rather than observed cluster presence or health.
 ```
 
 ```text
-@aks-waf-live Generate the complete read-only AKS configuration review for
+Generate the complete read-only AKS configuration review for
 <APPROVED_AKS_NAME> with operation=report. Cover cluster, workloads and
 associated resources across best practices, security, FinOps and optimization,
 including all five WAF pillars. Immediately deliver the HTML, complete JSON,
@@ -191,7 +198,7 @@ and limits; do not change anything.
 ```
 
 ```text
-@aks-waf-live Generate the combined read-only AKS configuration review for
+Generate the combined read-only AKS configuration review for
 <APPROVED_AKS_NAME>,<APPROVED_SECOND_AKS_NAME> with operation=report and
 cluster_names (exact comma-separated names, no spaces). Deliver all four files,
 preserve every per-cluster snapshot and disclose any failed cluster read
@@ -203,7 +210,7 @@ without borrowing another cluster's score, workloads or cost.
 ```
 
 ```text
-@aks-waf-live Use query/coverage for <APPROVED_AKS_NAME>. Which sources failed
+Use query/coverage for <APPROVED_AKS_NAME>. Which sources failed
 or were partial, with what HTTP/error code, and which checks cannot be
 evaluated? Explain why HTTP 502/429 is not permission denied and why HTTP 403
 does not mean zero Kubernetes objects.
@@ -214,7 +221,7 @@ does not mean zero Kubernetes objects.
 ```
 
 ```text
-@aks-waf-live Use query/findings with area=security and status=failed.
+Use query/findings with area=security and status=failed.
 Prioritize only observed risks with their resource, configuration, source,
 UTC timestamp, qualified impact and Microsoft recommendation. Do not invent
 critical findings.
@@ -225,7 +232,7 @@ critical findings.
 ```
 
 ```text
-@aks-waf-live Use query/workloads and query/findings for namespace=client-apps
+Use query/workloads and query/findings for namespace=client-apps
 and workload_name=frontend. Distinguish desired replicas, probes, requests,
 matched PDB/HPA/NetworkPolicy and No evaluado items. Do not infer Kubernetes
 manifests from telemetry or from ARM Running state.
@@ -236,7 +243,7 @@ manifests from telemetry or from ARM Running state.
 ```
 
 ```text
-@aks-waf-live Use query/finops. Which measurements include timestamp, window,
+Use query/finops. Which measurements include timestamp, window,
 unit, sample count and denominator? Which costs have real ResourceId and
 currency? Separate current capacity-review candidates from sustained
 underutilization and from calculated monetary savings. Do not buy plans,
@@ -248,7 +255,7 @@ change SKUs or delete assets.
 ```
 
 ```text
-@aks-waf-live Use query/summary and explain score and coverage together.
+Use query/summary and explain score and coverage together.
 How many checks were evaluated, and how many are No evaluado or No aplica?
 Explain why this local pass indicator neither certifies cluster health nor
 constitutes the official Azure Architecture Review.
