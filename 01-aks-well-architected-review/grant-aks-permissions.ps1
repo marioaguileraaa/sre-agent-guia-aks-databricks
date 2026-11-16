@@ -66,6 +66,8 @@ $MAX_CLUSTERS         = 500
 $failures = New-Object System.Collections.Generic.List[string]
 
 function Grant([string]$principalId, [string]$roleId, [string]$roleName, [string]$scope) {
+    # En Windows PowerShell 5.1, "Stop" + stderr redirigido de az aborta el script; se comprueba el codigo de salida.
+    $ErrorActionPreference = "Continue"
     $null = az role assignment create --assignee-object-id $principalId --assignee-principal-type ServicePrincipal `
         --role $roleId --scope $scope --only-show-errors -o none 2>&1
     if ($LASTEXITCODE -ne 0) {
@@ -80,7 +82,9 @@ function Get-MgSubscriptions([string]$mg) {
     $url = "https://management.azure.com/providers/Microsoft.Management/managementGroups/$mg/descendants?api-version=2020-05-01"
     $subs = @()
     while ($url) {
-        $page = az rest --method get --url $url -o json | ConvertFrom-Json
+        # En Windows az es un .cmd: se entrecomilla la URL para que cmd.exe no corte el nextLink en "&".
+        $urlArg = if ($env:OS -eq "Windows_NT") { "`"$url`"" } else { $url }
+        $page = az rest --method get --url $urlArg -o json | ConvertFrom-Json
         if ($LASTEXITCODE -ne 0) { throw "No se pudo leer el Management Group '$mg'. Revisa el nombre (ID, no display name) y tus permisos." }
         $subs += @($page.value | Where-Object { $_.type -eq "Microsoft.Management/managementGroups/subscriptions" -or $_.type -eq "/subscriptions" } | ForEach-Object { $_.name })
         $url = $page.nextLink
@@ -91,7 +95,7 @@ function Get-MgSubscriptions([string]$mg) {
 Write-Host "`n== 1. Tenant, identidad y suscripciones ==" -ForegroundColor Cyan
 $tenantId = az account show --query tenantId -o tsv
 if (-not $tenantId) { throw "No hay sesion de Azure CLI. Ejecuta primero: az login" }
-$principalId = az ad sp show --id $IdentityClientId --query id -o tsv 2>$null
+$principalId = & { $ErrorActionPreference = "Continue"; az ad sp show --id $IdentityClientId --query id -o tsv 2>$null }
 if (-not $principalId) { throw "No se encuentra la identidad con Client ID $IdentityClientId en este tenant." }
 Write-Host "  Tenant: $tenantId"
 Write-Host "  Identidad SRE Agent: clientId=$IdentityClientId  principalId=$principalId"
@@ -143,9 +147,10 @@ foreach ($scope in $scopes) {
 Write-Host "`n== 3. Clusters AKS por suscripcion ==" -ForegroundColor Cyan
 $found = @()
 foreach ($sub in $subs) {
-    $json = az aks list --subscription $sub --query "[].{name:name, rg:resourceGroup, id:id, managed:aadProfile.managed, azRbac:aadProfile.enableAzureRbac}" -o json 2>$null
+    $json = & { $ErrorActionPreference = "Continue"; az aks list --subscription $sub --query "[].{name:name, rg:resourceGroup, id:id, managed:aadProfile.managed, azRbac:aadProfile.enableAzureRbac}" -o json 2>$null }
     if ($LASTEXITCODE -ne 0) { $failures.Add("az aks list -> $sub"); Write-Host "  [ERROR] No se pudo listar AKS en $sub" -ForegroundColor Red; continue }
-    $list = @($json | ConvertFrom-Json)
+    # ForEach-Object desenrolla el array (ConvertFrom-Json de Windows PowerShell 5.1 lo devuelve como un solo objeto).
+    $list = @($json | ConvertFrom-Json | ForEach-Object { $_ })
     if ($explicitClusters.Count -gt 0) {
         $wanted = $explicitClusters[$sub]
         $list = @($list | Where-Object { $wanted -and $wanted -contains "$($_.rg)/$($_.name)".ToLower() })
@@ -180,7 +185,7 @@ $summary = foreach ($aks in $found) {
 $summary | Format-Table -AutoSize -Wrap
 $summary | Export-Csv -Path "aks-auth-modes.csv" -NoTypeInformation -Encoding UTF8
 $okCount = @($summary | Where-Object { $_.LecturaKubernetes -like "OK*" }).Count
-Write-Host "  $okCount de $($summary.Count) clusters con lectura Kubernetes completa. Detalle: aks-auth-modes.csv"
+Write-Host "  $okCount de $(@($summary).Count) clusters con lectura Kubernetes completa. Detalle: aks-auth-modes.csv"
 
 Write-Host "`n== 6. Bloque de configuracion -> $OutFile ==" -ForegroundColor Cyan
 $defaultSub = ($found | Group-Object Subscription | Sort-Object Count -Descending | Select-Object -First 1).Name
@@ -215,7 +220,7 @@ foreach ($aks in ($found | Sort-Object Subscription, Name)) {
     $lines.Add("    `"$key`": {`"resource_group`": `"$($aks.ResourceGroup)`", `"subscription_id`": `"$($aks.Subscription)`"$extra},")
 }
 $lines.Add("}")
-[IO.File]::WriteAllText((Join-Path (Get-Location) $OutFile), ($lines -join "`n") + "`n", (New-Object Text.UTF8Encoding $false))
+[IO.File]::WriteAllText($ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutFile), ($lines -join "`n") + "`n", (New-Object Text.UTF8Encoding $false))
 $lines | Select-Object -First 25 | ForEach-Object { Write-Host $_ }
 if ($lines.Count -gt 25) { Write-Host "    ... ($($found.Count) clusters en total, ver $OutFile)" }
 if ($dupes) { Write-Host "  Nombres repetidos en varias suscripciones (clave con prefijo de suscripcion + aks_name): $($dupes -join ', ')" -ForegroundColor Yellow }
