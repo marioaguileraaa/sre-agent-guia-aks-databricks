@@ -43,6 +43,8 @@ def main(operation: str = "catalog", spec_json: str = "", code: str = "") -> dic
 TEMPLATE = r'''__TEMPLATE__'''.replace("\ndef __TEMPLATE_MAIN__(", "\ndef main(")
 
 SEVERITIES = ["critical", "high", "medium", "low", "info"]
+TOOL_NAME_MAX = 36  # Tool Name limit of the SRE Agent portal; a generated tool is named run-<name>
+NAME_MAX = TOOL_NAME_MAX - len("run-")
 OPERATORS = {
     "eq": "equals value (case-insensitive text)", "ne": "differs from value", "in": "is one of value[list]",
     "not_in": "is not one of value[list]", "contains": "contains value (text)", "regex": "matches regex value",
@@ -225,7 +227,7 @@ RECIPES = [
 ]
 
 SPEC_FIELDS = {
-    "name": "kebab-case use-case name, 3-40 chars (tool = run-<name>, skill and subagent = <name>)",
+    "name": f"kebab-case use-case name, 3-{NAME_MAX} chars (tool = run-<name>, at most {TOOL_NAME_MAX} chars; skill and subagent = <name>)",
     "title": "report title shown in HTML and chat", "description": "one sentence: what it detects and why it matters (business value)",
     "language": "es | en (report language; the subagent answers in the user's language)", "client": "optional customer/team label",
     "audience": "optional: who reads the report", "accent": "optional hex colour for the report, default #0f6cbd",

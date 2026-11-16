@@ -67,9 +67,10 @@ The builder regenerates and re-tests after each change.
 
 ## 4. Prompts for the generated subagent
 
-After you create the generated tool, skill and subagent (for example `orphaned-managed-disks`):
+After you create the generated tool, skill and subagent (for example `orphaned-managed-disks`), open a new chat, type `/agent`,
+pick the subagent (the chip **Agent: orphaned-managed-disks** appears) and send one of these prompts:
 
-- `/agent orphaned-managed-disks run the self test of the tool and tell me if it works`
-- `/agent orphaned-managed-disks check the live data sources and show me the columns you see`
-- `/agent orphaned-managed-disks give me the report for the last 7 days`
-- `/agent orphaned-managed-disks what changed since the previous report and what should I fix first?`
+- `run the self test of the tool and tell me if it works`
+- `check the live data sources and show me the columns you see`
+- `give me the report for the last 7 days`
+- `what changed since the previous report and what should I fix first?`

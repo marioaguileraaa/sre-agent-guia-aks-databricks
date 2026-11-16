@@ -253,7 +253,8 @@ def _task_prompt(config, meta):
 
 
 def _test_prompts(config, meta):
-    return [f"/agent {meta['agent']} run the self test of the tool and tell me if it works",
-            f"/agent {meta['agent']} check the live data sources and show me the columns you see",
-            f"/agent {meta['agent']} give me the {config['title'].lower()} report for the last {config['lookback_days']} days",
-            f"/agent {meta['agent']} what changed since the previous report and what should I fix first?"]
+    """Prompts to send after picking the subagent with /agent in a new chat (the portal shows it as a chip, not as text)."""
+    return ["run the self test of the tool and tell me if it works",
+            "check the live data sources and show me the columns you see",
+            f"give me the {config['title'].lower()} report for the last {config['lookback_days']} days",
+            "what changed since the previous report and what should I fix first?"]

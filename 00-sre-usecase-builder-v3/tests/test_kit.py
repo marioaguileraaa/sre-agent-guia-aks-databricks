@@ -85,6 +85,14 @@ for part in kit.GET_PARTS:
     print(f"{'PASS' if ok else 'FAIL'} get {part:12s} pages={pages} chars={len(text)}")
 bad_get = kit.main("get", "nope/answer")
 failures += bad_get["status"] != "NOT_FOUND"
+# generated guides describe today's portal (Build + configure > Agent Canvas), not the retired Builder and Settings paths
+folder = work / "sre-usecase-builder" / name
+docs = [(folder / f"{name}-{kind}.md").read_text(encoding="utf-8") for kind in ("SETUP", "BUILDER-BLOCKS")]
+docs.append(kit._answer_md(json.loads((folder / f"{name}-scaffold.json").read_text(encoding="utf-8"))))
+stale = sorted({old for old in ("Builder >", "Settings >", "Custom Agent", "Create (arrow)", "/agent " + name) for d in docs if old in d})
+ok = not stale and all("Build + configure > Agent Canvas" in d for d in docs)
+failures += not ok
+print(f"{'PASS' if ok else 'FAIL'} SETUP, BUILDER-BLOCKS and answer use today's portal labels {stale}")
 # lint negative cases
 bad = {"eval": "def main(x: str = ''):\n    return eval(x)\n",
        "delete": "import requests\ndef main(x: str = ''):\n    return requests.delete('https://management.azure.com/x').status_code\n",
@@ -103,6 +111,16 @@ print(f"{'PASS' if good['status'] == 'PASS' else 'FAIL'} lint-positive read-only
 inv = kit.main("scaffold", json.dumps({"name": "X", "sources": [{"id": "a", "type": "nope"}], "rules": [{"id": "r", "dataset": "b", "when": {"field": "f", "op": "zz"}}]}))
 failures += inv["status"] != "INVALID"
 print(f"{'PASS' if inv['status'] == 'INVALID' else 'FAIL'} invalid spec -> {len(inv.get('errors', []))} errors with fixes")
+# the portal's Tool Name takes 36 characters: names over 32 are rejected (the tool is run-<name>) with a shorter suggestion
+long_spec = dict(fill(copy.deepcopy(recipes[0]["spec"])), name="unattached-public-ip-addresses-cost")
+long_res = kit.main("scaffold", json.dumps(long_spec))
+name_err = next((e for e in long_res.get("errors", []) if e["path"] == "name"), {})
+suggested = name_err.get("fix", "").rsplit("e.g. ", 1)[-1]
+_, edge_meta, edge_errors, _ = kit._validate(dict(long_spec, name="a" * 32))
+ok = (long_res["status"] == "INVALID" and "36-character" in name_err.get("error", "") and suggested == "unattached-public-ip-addresses"
+      and not edge_errors and len(edge_meta["tool"]) == 36)
+failures += not ok
+print(f"{'PASS' if ok else 'FAIL'} tool name limit: 35-char name rejected (suggests {suggested}), 32-char name gives a 36-char tool")
 # ---------- environment: principal (object) id of the agent identity with and without the oid claim
 # Since November 2026 the sandbox sidecar hands out placeholder tokens without oid; the id is looked up instead.
 import base64

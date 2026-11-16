@@ -1,7 +1,7 @@
 
 
 # ----------------------------------------------------------------------------- spec validation
-NAME_RE = re.compile(r"^[a-z][a-z0-9-]{2,39}$")
+NAME_RE = re.compile(rf"^[a-z][a-z0-9-]{{2,{NAME_MAX - 1}}}$")
 ID_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 CRON_RE = re.compile(r"^(\S+\s+){4}\S+$")
@@ -61,6 +61,18 @@ def _check_condition(cond, where, errors):
                 errors.append({"path": where, "error": f"invalid regex: {exc}", "fix": "escape special characters"})
 
 
+def _short_name(name):
+    """Kebab-case suggestion for an invalid or too long name: whole words while they fit in NAME_MAX."""
+    words = [w for w in re.sub(r"[^a-z0-9]+", "-", str(name).lower()).split("-") if w]
+    out = ""
+    for word in words:
+        if len(out) + len(word) + bool(out) > NAME_MAX:
+            break
+        out = f"{out}-{word}" if out else word
+    out = out or "-".join(words)[:NAME_MAX].strip("-")
+    return out if NAME_RE.match(out) else ""
+
+
 def _validate(spec):
     errors, warnings = [], []
     if not isinstance(spec, dict):
@@ -70,7 +82,9 @@ def _validate(spec):
             warnings.append(f"Unknown spec field '{key}' ignored.")
     name = str(spec.get("name", "")).strip().lower()
     if not NAME_RE.match(name):
-        errors.append({"path": "name", "error": f"invalid name '{name}'", "fix": "kebab-case, 3-40 chars, e.g. vm-heartbeat-gaps"})
+        too_long = f": {len(name)} chars, the tool run-{name} would exceed the {TOOL_NAME_MAX}-character Tool Name" if len(name) > NAME_MAX else ""
+        errors.append({"path": "name", "error": f"invalid name '{name}'{too_long}",
+                       "fix": f"kebab-case, 3-{NAME_MAX} chars, e.g. {_short_name(name) or 'vm-heartbeat-gaps'}"})
     title = str(spec.get("title") or name.replace("-", " ").capitalize()).replace('"""', "'").replace("\\", "/")
     description = str(spec.get("description") or "").strip()
     if not description:

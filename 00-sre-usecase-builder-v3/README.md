@@ -340,7 +340,7 @@ The answer and the downloadable `<name>-SETUP.md` contain the exact steps. In sh
 | Step | Where | What |
 |---|---|---|
 | 1 | Azure Cloud Shell | Run the `az role assignment create ...` commands from *Permissions* (skip those marked already granted) |
-| 2 | **Build + configure > Agent Canvas > Create ▾ > Tool › Python tool** | Block 1: name, description, timeout, parameters, code. Identity tab OFF |
+| 2 | **Build + configure > Agent Canvas > Create ▾ > Tool › Python tool** | Block 1: name, description, timeout and code (the parameters come from `main()`). Identity tab OFF |
 | 3 | Test playground of that tool | Test in order: `mode=self_test` → `mode=discover` → `mode=report, publish=no` → `publish=yes` (only if publishing). Then **Create tool** |
 | 4 | **Create ▾ > Skill** | Block 2, with the new tool selected |
 | 5 | **Create ▾ > Custom agent** | Block 3, with the new skill and tool selected |
