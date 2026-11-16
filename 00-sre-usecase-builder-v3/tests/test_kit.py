@@ -103,6 +103,83 @@ print(f"{'PASS' if good['status'] == 'PASS' else 'FAIL'} lint-positive read-only
 inv = kit.main("scaffold", json.dumps({"name": "X", "sources": [{"id": "a", "type": "nope"}], "rules": [{"id": "r", "dataset": "b", "when": {"field": "f", "op": "zz"}}]}))
 failures += inv["status"] != "INVALID"
 print(f"{'PASS' if inv['status'] == 'INVALID' else 'FAIL'} invalid spec -> {len(inv.get('errors', []))} errors with fixes")
+# ---------- environment: principal (object) id of the agent identity with and without the oid claim
+# Since November 2026 the sandbox sidecar hands out placeholder tokens without oid; the id is looked up instead.
+import base64
+import types
+from unittest import mock
+
+import requests
+
+CID, TID, SUB = "00000000-0000-0000-0000-0000000000c1", "00000000-0000-0000-0000-0000000000d1", "00000000-0000-0000-0000-000000000002"
+SIDECAR = {"iss": "adc-msi-sidecar", "cid": CID, "clientId": CID, "kind": "msi", "scp": "user_impersonation", "iat": 1, "exp": 2, "tid": TID}
+AGENTS = f"/subscriptions/{SUB}/resourceGroups/rg-agent/providers/Microsoft.App/agents/"
+P = {n: f"00000000-0000-0000-0000-0000000000a{n}" for n in range(1, 6)}
+
+
+class _Resp:
+    def __init__(self, status, body):
+        self.status_code, self._body, self.text = status, body, json.dumps(body)
+
+    def json(self):
+        return self._body
+
+
+def run_environment(claims, uami=(), agents=(), sami=None, graph=None):
+    calls = []
+
+    def fake_request(method, url, **kw):
+        query = (kw.get("json") or {}).get("query", "")
+        calls.append(f"{url} {query}")
+        if "/subscriptions?" in url:
+            return _Resp(200, {"value": [{"subscriptionId": SUB, "displayName": "lab"}]})
+        if "Microsoft.ResourceGraph" in url:
+            return _Resp(200, {"data": list(uami) if "userassignedidentities" in query else list(agents) if "microsoft.app/agents" in query else []})
+        if "/identities/default" in url:
+            return _Resp(200, {"properties": (sami or {}).get(url.split("/providers/Microsoft.ManagedIdentity")[0].rsplit("/", 1)[-1], {})})
+        if "roleAssignments" in url:
+            return _Resp(200, {"value": [{"properties": {"roleDefinitionId": "/providers/Microsoft.Authorization/roleDefinitions/r1", "scope": f"/subscriptions/{SUB}"}}]})
+        if "roleDefinitions" in url:
+            return _Resp(200, {"properties": {"roleName": "Reader"}})
+        if "servicePrincipals" in url:
+            return _Resp(200, {"value": graph}) if graph else _Resp(403, {"error": {"code": "Authorization_RequestDenied"}})
+        return _Resp(404, {"error": url})
+
+    token = ".".join(base64.urlsafe_b64encode(json.dumps(part).encode()).decode().rstrip("=") for part in ({"alg": "none"}, claims, {}))
+    identity = types.ModuleType("azure.identity")
+    identity.ManagedIdentityCredential = lambda client_id: types.SimpleNamespace(get_token=lambda scope: types.SimpleNamespace(token=token))
+    with mock.patch.dict(sys.modules, {"azure.identity": identity}), mock.patch.dict(os.environ, {"AZURE_CLIENT_ID": CID}), \
+            mock.patch.object(requests, "request", fake_request):
+        return kit._environment(), calls
+
+
+env_cases = [  # label, token claims, lookup data, expected principal_id and principal_id_source
+    ("token with oid (older platforms)", {"aud": kit.ARM, "oid": P[1], "tid": TID}, {}, P[1], "token"),
+    ("sidecar token, user-assigned identity found in Resource Graph", SIDECAR, {"uami": [{"principalId": P[2]}]}, P[2], "resource_graph"),
+    ("sidecar token, system-assigned identity confirmed through ARM", SIDECAR,
+     {"agents": [{"id": AGENTS + "other", "identity": {"type": "SystemAssigned", "principalId": P[5]}},
+                 {"id": AGENTS + "mine", "identity": {"type": "SystemAssigned", "principalId": P[3]}}],
+      "sami": {"other": {"clientId": "00000000-0000-0000-0000-0000000000c2", "principalId": P[5]}, "mine": {"clientId": CID, "principalId": P[3]}}},
+     P[3], "resource_graph"),
+    ("sidecar token, service principal found in Microsoft Graph", SIDECAR, {"graph": [{"id": P[4]}]}, P[4], "graph"),
+    ("sidecar token without tid, identity not visible", {k: v for k, v in SIDECAR.items() if k != "tid"}, {}, None, None),
+]
+for label, claims, lookups, principal, source in env_cases:
+    env, calls = run_environment(claims, **lookups)
+    ident = env.get("identity") or {}
+    listed = [c for c in calls if "assignedTo(" in c]
+    ok = (ident.get("principal_id"), ident.get("principal_id_source")) == (principal, source) and not any("assignedTo('None')" in c for c in calls)
+    if principal:
+        ok = ok and env["status"] == "OK" and bool(listed) and all(f"assignedTo('{principal}')" in c for c in listed) \
+            and env["azure_roles"] == [{"role": "Reader", "scope": f"/subscriptions/{SUB}"}]
+    else:
+        ok = ok and env["status"] == "PARTIAL" and not listed and env["azure_roles"] == [] and ident.get("tenant_id") is None \
+            and any(e.startswith("principal_id unknown") for e in env["errors"])
+    if source == "token":
+        ok = ok and ident.get("tenant_id") == TID and not any("userassignedidentities" in c or "servicePrincipals" in c for c in calls)
+    budget("environment " + label, kit._env_summary(env))
+    failures += not ok
+    print(f"{'PASS' if ok else 'FAIL'} environment {label} -> principal_id {ident.get('principal_id')} ({ident.get('principal_id_source')})")
 print("work dir:", work)
 print("FAILURES:", failures)
 sys.exit(1 if failures else 0)

@@ -200,12 +200,57 @@ def _field_check(config, discover):
 
 
 # ----------------------------------------------------------------------------- environment
+GUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+
 def _jwt_claims(token):
     try:
         part = token.split(".")[1]
-        return json.loads(base64.urlsafe_b64decode(part + "=" * (-len(part) % 4)))
+        claims = json.loads(base64.urlsafe_b64decode(part + "=" * (-len(part) % 4)))
+        return claims if isinstance(claims, dict) else {}
     except Exception:
         return {}
+
+
+def _principal_lookup(client_id, subs, arg, get):
+    """(principal_id, source) of the agent identity when its token has no `oid`, else (None, None).
+
+    Since November 2026 the sandbox identity sidecar returns placeholder tokens (no oid, aud or appid) that the platform
+    swaps for the real token at egress. An id is only returned when it is tied to this client id, never guessed."""
+    if not GUID_RE.match(client_id):
+        return None, None
+    same = lambda value: str(value or "").lower() == client_id.lower()
+    is_guid = lambda value: bool(GUID_RE.match(str(value or "")))
+    if subs:
+        try:
+            query = ("resources | where type =~ 'microsoft.managedidentity/userassignedidentities' "
+                     f"| where tostring(properties.clientId) =~ '{client_id}' | project principalId = tostring(properties.principalId)")
+            ids = {r.get("principalId") for r in arg(query) if is_guid(r.get("principalId"))}
+            if len(ids) == 1:
+                return ids.pop(), "resource_graph"
+            agents = arg("resources | where type =~ 'microsoft.app/agents' | project id, identity")
+            for agent in agents:
+                for uai in ((agent.get("identity") or {}).get("userAssignedIdentities") or {}).values():
+                    if same(uai.get("clientId")) and is_guid(uai.get("principalId")):
+                        return uai["principalId"], "resource_graph"
+            for agent in [a for a in agents if (a.get("identity") or {}).get("principalId")][:10]:
+                # System-assigned: Resource Graph has no client id for it, so it is confirmed through ARM before use.
+                try:
+                    props = get(ARM + agent["id"] + "/providers/Microsoft.ManagedIdentity/identities/default?api-version=2023-01-31").get("properties") or {}
+                except Exception:
+                    continue
+                if same(props.get("clientId")) and is_guid(props.get("principalId")):
+                    return props["principalId"], "resource_graph"
+        except Exception:
+            pass
+    try:
+        sps = get(f"https://graph.microsoft.com/v1.0/servicePrincipals?$filter=appId%20eq%20'{client_id}'&$select=id",
+                  scope="https://graph.microsoft.com/.default").get("value", [])
+        if len(sps) == 1 and is_guid(sps[0].get("id")):
+            return sps[0]["id"], "graph"
+    except Exception:
+        pass
+    return None, None
 
 
 def _environment():
@@ -226,7 +271,8 @@ def _environment():
 
     try:
         claims = _jwt_claims(cred.get_token("https://management.azure.com/.default").token)
-        out["identity"] = {"client_id": client_id, "principal_id": claims.get("oid"), "tenant_id": claims.get("tid")}
+        out["identity"] = {"client_id": client_id, "principal_id": claims.get("oid"), "tenant_id": claims.get("tid"),
+                           "principal_id_source": "token" if claims.get("oid") else None}
     except Exception as exc:
         return {"status": "AUTH_FAILED", "message": f"{type(exc).__name__}: {str(exc)[:300]}"}
     subs = []
@@ -252,10 +298,16 @@ def _environment():
                 out[key] = arg(query)
             except Exception as exc:
                 out["errors"].append(f"{key}: {exc}")
+    ident = out["identity"]
+    if not ident["principal_id"]:
+        ident["principal_id"], ident["principal_id_source"] = _principal_lookup(client_id, subs, arg, get)
+    if not ident["principal_id"]:
+        out["errors"].append("principal_id unknown: the sandbox token no longer includes oid and the identity resource is not visible; "
+                             "azure_roles not listed - check role assignments in the Azure portal")
     roles, names = [], {}
-    for sub in subs[:25]:
+    for sub in subs[:25] if ident["principal_id"] else []:
         try:
-            url = f"{ARM}/subscriptions/{sub['id']}/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01&$filter=assignedTo('{out['identity']['principal_id']}')"
+            url = f"{ARM}/subscriptions/{sub['id']}/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01&$filter=assignedTo('{ident['principal_id']}')"
             for ra in get(url).get("value", []):
                 rd = ra["properties"]["roleDefinitionId"]
                 if rd not in names:
