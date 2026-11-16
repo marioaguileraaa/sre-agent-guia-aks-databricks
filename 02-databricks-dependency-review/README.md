@@ -6,7 +6,7 @@
 > 🔄 **Actualización 16/11/2026: leed primero [este bloque de `LEEME-PRIMERO.md`](../LEEME-PRIMERO.md#-actualización-16112026--leed-esto-primero).**
 > La herramienta se llama ahora **`databricks-dependency-report`** (el portal corta *Tool Name* a 36
 > caracteres), hay que pegar el `.py` actual (si no, `identity_mismatch`) y el portal ha cambiado
-> respecto a las capturas.
+> respecto a octubre (las capturas del portal de esta guía ya son las de hoy).
 
 El subagente `databricks-dependency-live` revisa **hasta 5 workspaces de Azure Databricks** y genera
 un informe con:
@@ -370,10 +370,10 @@ Qué es cada valor y de dónde sale:
 1. **sre.azure.com → vuestro agente → Build + configure → Agent Canvas → Create ▾** (la flecha junto
    a *Create*) **→ Tool › → Python tool**.
 
-   ![Menú Create > Tool > Python tool](images/08-create-drop-down-arrow.png)
+   ![Build + configure > Agent Canvas > Create ▾ > Tool > Python tool](images/newui-menu.png)
 
-   **1** pulsad la **flecha** de *Create* (no el botón: ese abre el formulario de subagente) ·
-   **2** **Tool → Python tool**.
+   **1** Build + configure · **2** Agent Canvas · **3** pulsad la **flecha** ▾ de *Create* (no el botón:
+   ese abre el formulario de subagente) · **4** Tool › · **5** **Python tool**.
 
 2. Pestaña **Code** (el diálogo tiene 3 pestañas: *Code / Test playground / Identity*; no uséis
    *Generate*):
@@ -388,11 +388,11 @@ Qué es cada valor y de dónde sale:
    - No hay campo *Requirements*: el entorno Python del SRE Agent ya trae azure-identity y Pillow
      ([`requirements.txt`](requirements.txt) es solo informativo).
 
-   ![Código y timeout](images/02-private-code-and-timeout.png)
+   ![Create a Python tool, pestaña Code](images/newui-code.png)
 
-   **1** nombre de la herramienta y timeout `900` (en esta captura de octubre se ve
-   `generate-databricks-dependency-report`, creada por API; hoy usad `databricks-dependency-report`)
-   · **2** editor donde se pega el fichero completo (en la captura está tapado a propósito).
+   **1** *Tool Name* `databricks-dependency-report` (máx. 36 caracteres; el campo es estrecho y no se ve
+   entero) · **2** *Timeout (seconds)* `900` · **3** *Description* · **4** editor: `Ctrl+A` y pegar el
+   `.py` completo (se ve el principio del fichero) · **5** *Create tool*, en gris hasta pulsar **Test**.
 
    > **¿Ya la creasteis con el nombre cortado** (`generate-databricks-dependency-repor`)? O la volvéis
    > a crear como `databricks-dependency-report`, o usáis **exactamente** el nombre guardado en el
@@ -402,9 +402,9 @@ Qué es cada valor y de dónde sale:
 3. Pestaña **Identity**: **Enable Azure Identity en Off**. El código ya usa la identidad del agente
    por su Client ID.
 
-   ![Identity Off](images/03-identity-access-off.png)
+   ![Identity Off](images/newui-identity.png)
 
-   **1** pestaña **Identity** · **2** interruptor en **Off**.
+   **1** pestaña **Identity** · **2** *Enable Azure Identity* en **Off**.
 
    > ⚠️ No lo encendáis, ni siquiera para mirar: el portal añade 4 líneas al principio del código
    > (`# Azure Identity Authentication`, `from azure.identity import DefaultAzureCredential`,
@@ -434,11 +434,15 @@ Qué es cada valor y de dónde sale:
    > las claves de `APPROVED_WORKSPACES` (si no, `workspace_name must exactly match the fixed operator
    > allowlist`). La lista «para el enum» que imprime el script ya no se usa.
 
-   ![Herramienta guardada con los 12 parámetros](images/01-saved-tool-and-12-parameters.png)
+   ![Test playground: los 12 parámetros, parte de arriba](images/newui-playground-1.png)
 
-   **1** nombre de la herramienta · **2** firma de `main` · **3** los 12 parámetros
-   (`limit` y `offset` como **int**). *(Captura de octubre, con el nombre
-   `generate-databricks-dependency-report`; hoy, `databricks-dependency-report`.)*
+   ![Test playground: los 12 parámetros, parte de abajo](images/newui-playground-1-b.png)
+
+   En la pestaña **Test playground** salen las 12 cajas **vacías** (sin valores ni desplegables,
+   tampoco para `workspace_name`): hay que escribir cada valor. En las capturas, los de la
+   [prueba 1 del paso 4](#prueba-1--configuración-segundos-no-llama-a-azure). Arriba: **1** pestaña Test
+   playground · **2** **Test** · **3** `operation` = `list_workspaces` · **4** *Create tool* en gris.
+   Abajo: **2** `limit` = `25` y **3** `offset` = `0` (cajas *Enter int value*: números).
 
 5. Pestaña **Test playground** → **Test**: haced las pruebas del [paso 4](#-paso-4--test-playground-qué-valores-poner-en-cada-parámetro)
    y después **Create tool** (sigue en gris hasta pulsar **Test**).
@@ -448,11 +452,12 @@ Qué es cada valor y de dónde sale:
 ## ⭐ Paso 4 · Test playground: qué valores poner en cada parámetro
 
 Es la **pestaña Test playground** del diálogo de la herramienta (al crearla, o después: **Build +
-configure → Agent Canvas → Table view → Python tools → `databricks-dependency-report` → lápiz**), no
-el botón *Test playground* de la barra del Agent Canvas. Pulsad **Test**: salen 12 cajas **vacías**
-(sin valores ni desplegables, tampoco para `workspace_name`). **Escribid todos los valores de la
-tabla de cada prueba**; lo marcado con ← es lo que cambia entre pruebas. **Save** / **Create tool**
-siguen en gris hasta que la prueba se ha ejecutado (no es un problema de rol).
+configure → Agent Canvas → Table view → Python tools** (tarjeta *Tools & skills*) **→
+`databricks-dependency-report` → lápiz**), no el botón *Test playground* de la barra del Agent Canvas.
+Pulsad **Test**: salen 12 cajas **vacías** (sin valores ni desplegables, tampoco para `workspace_name`).
+**Escribid todos los valores de la tabla de cada prueba**; lo marcado con ← es lo que cambia entre
+pruebas. **Save** / **Create tool** siguen en gris hasta que la prueba se ha ejecutado (no es un
+problema de rol).
 
 > ⏱️ **Límite del playground:** la prueba se corta a los **~100 s con HTTP 504**, aunque el Timeout
 > sea 900. Si las pruebas 2 o 3 dan 504, no es un fallo de la herramienta: lanzad la consulta o el
@@ -484,6 +489,8 @@ siguen en gris hasta que la prueba se ha ejecutado (no es un problema de rol).
 | `classification`, `area`, `level`, `severity`, `status` | `all` |
 | `limit` | `25` |
 | `offset` | `0` |
+
+(Las capturas del [paso 3, punto 4](#paso-3--crear-la-herramienta-python) muestran estos valores.)
 
 Resultado esperado:
 
@@ -520,6 +527,12 @@ Puede acercarse al límite de ~100 s del playground: si da HTTP 504, hacedla des
 | `workspace_name` | **`<vuestro workspace>`** ← escribir |
 | resto | los de la prueba 1: `workspace_names` y `workload_name` vacíos; `all`; `25`; `0` |
 
+![Prueba 2 en Test playground](images/newui-playground-2.png)
+
+**1** pestaña Test playground · **2** **Test** · **3** `operation` = `query` · **4** `view` = `coverage` ·
+**5** `workspace_name` = el nombre exacto de la prueba 1 (en la captura, el ejemplo `dbw-gestamp-prod`) ·
+**6** *Create tool*, en gris hasta pulsar Test.
+
 Resultado esperado: `status: ok` y una fila por fuente con su estado. Cada respuesta trae solo unas
 pocas fuentes: si `next_offset` no es `null`, repetid con ese `offset`, o poned `status` = `denied`
 para ver solo las que fallan por permisos. Cómo leerlo:
@@ -548,6 +561,12 @@ donde puede tardar unos minutos.
 | `operation` | `report` (el valor por defecto) |
 | `workspace_name` | **`<vuestro workspace>`** ← escribir |
 | resto | **todo por defecto**, escrito en cada caja (regla 3) |
+
+![Prueba 3 en Test playground](images/newui-playground-3.png)
+
+**1** pestaña Test playground · **2** **Test** · **3** `operation` = `report` (escrito) · **4**
+`workspace_name` = el nombre exacto de la prueba 1 (en la captura, `dbw-gestamp-prod`) · **5** *Create
+tool*, en gris hasta pulsar Test.
 
 Debe terminar con `status: ok` o `partial` (`partial` = alguna fuente sin leer; los 4 ficheros se
 generan igual). Los 4 ficheros descargables se ven mejor desde el **chat**
@@ -581,48 +600,86 @@ generan igual). Los 4 ficheros descargables se ven mejor desde el **chat**
 
 ## Paso 5 · Crear el skill
 
-**Build + configure → Agent Canvas → Create ▾ → Skill** → **Create skill**. El orden importa:
+**Build + configure → Agent Canvas → Create ▾ → Skill** → **Create skill**.
+
+![Create ▾ > Skill](images/newui-skill-menu.png)
+
+**1** la flecha ▾ de **Create** · **2** **Skill**.
+
+El orden importa:
 
 1. Pegad [`skills/databricks-dependency-live/SKILL.md`](skills/databricks-dependency-live/SKILL.md)
    en el editor de la derecha (rellena *Name* `databricks-dependency-live` y *Description*).
+
+   ![Create skill: pegar el SKILL.md](images/newui-skill.png)
+
+   **1** editor *SKILL.md*: pegar el fichero completo (primero) · **2** *Name* y **3** *Description*
+   se rellenan solos · **4** *Choose tools* (después).
+
 2. **Después**: **Choose tools** → buscad `databricks-dependency-report` → desplegad el grupo
    **PythonFunctionTool (n)** → marcad solo esa herramienta (nunca la casilla del grupo) →
    **Close panel**.
+
+   ![Choose tools: buscar, desplegar el grupo y marcar la herramienta](images/newui-skill-tools.png)
+
+   **1** buscador · **2** desplegad el grupo *PythonFunctionTool* · **3** marcad solo
+   `databricks-dependency-report` · **4** *Close panel*.
+
 3. Comprobad el chip y que el editor muestre `tools:` → **Create**.
+
+   ![Create skill listo](images/newui-skill-chip.png)
+
+   **1** chip de la herramienta · **2** `tools:` con `databricks-dependency-report` en la cabecera ·
+   **3** *Create*.
 
 Si se elige la herramienta antes de pegar, al pegar el `SKILL.md` se sustituye la cabecera y la
 herramienta desaparece. **Tools:** **solo** `databricks-dependency-report`.
-
-![Skill guardado](images/05-saved-runtime-skill.png)
-
-**1** nombre del skill · **2** única herramienta adjunta · **3** `SKILL.md` completo. *(Captura de
-octubre: la herramienta se llamaba `generate-databricks-dependency-report`.)*
 
 ---
 
 ## Paso 6 · Crear el subagente
 
-**Build + configure → Agent Canvas →** botón **Create** (abre directamente *Create a custom agent*):
+**Build + configure → Agent Canvas →** botón **Create** (abre directamente *Create a custom agent*;
+también **Create ▾ → Custom agent**):
+
+![Botón Create o Create ▾ > Custom agent](images/newui-agent-menu.png)
+
+**1** botón **Create** (abre directamente el formulario) · **2** la flecha ▾ · **3** *Custom agent*
+(mismo formulario).
 
 - **Custom agent name:** `databricks-dependency-live`
 - **Instructions:** el bloque *Copy-ready instructions* de
   [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md).
+
+  ![Create a custom agent: nombre e instrucciones](images/newui-agent.png)
+
+  **1** *Custom agent name* · **2** *Instructions* (pegar el bloque) · **3** *Choose skills* ·
+  **4** *Choose tools*.
+
+- **Choose skills:** **solo** `databricks-dependency-live`.
+
+  ![Choose skills: filtrar y marcar el skill](images/newui-agent-skills.png)
+
+  **1** filtro · **2** marcad solo `databricks-dependency-live` (no *Select all*) · **3** *Close panel*.
+
 - **Choose tools:** **solo** `databricks-dependency-report` (desplegad los grupos; **no lo dejéis
   vacío**: vacío puede heredar todas las herramientas globales).
-- **Choose skills:** **solo** `databricks-dependency-live`.
-- No uséis *Refine with AI* ni *View AI suggestions*. Después, **Create**.
 
-![Subagente guardado](images/06-saved-restricted-specialist.png)
+  ![Choose tools: buscar, desplegar el grupo y marcar la herramienta](images/newui-agent-tools.png)
 
-**1** nombre e instrucciones · **2** solo la herramienta de Databricks · **3** solo el skill
-`databricks-dependency-live`.
+  **1** buscador · **2** desplegad el grupo *PythonFunctionTool* · **3** marcad solo
+  `databricks-dependency-report` · **4** *Close panel*.
 
-![Selección explícita de skill y herramienta](images/07-saved-explicit-allowlists.png)
+- No uséis *Refine with AI* ni *View AI suggestions*. Comprobad los chips y, después, **Create**.
 
-**1** skill seleccionado · **2** herramienta seleccionada · **3** *Save* deshabilitado = ya está
-guardado. (Los contadores globales de herramientas/skills que se ven arriba son del agente, no del
-subagente: lo que cuenta son los chips seleccionados. Hoy, en *Table view*, la columna *Tools* puede
-decir «Inherits 165 tools · 76 skills»: fiaos de los chips del formulario.)
+  ![Create a custom agent listo](images/newui-agent-chips.png)
+
+  **1** chip del skill `databricks-dependency-live` · **2** chip de la herramienta
+  `databricks-dependency-report` · **3** *Create*.
+
+Lo que cuenta son esos dos chips. Los textos del formulario («inherits 76 global skills / 166 global
+tools») y la columna *Tools* de *Table view* («Inherits 166 tools · 76 skills») hablan de los valores
+globales del agente, no de este subagente: fiaos de los chips.
 
 (Opcional) Comprobad en **Build + configure → Extensions → Tools** → pestaña *Custom tools* que la
 herramienta nueva sale **On / Allow**, y en **Extensions → Skills** → *Custom skills* que el skill
@@ -636,9 +693,14 @@ sale **On**.
    **Agent: databricks-dependency-live** → pegad el prompt. (Escribir `@` ya no abre selector, y
    `/databricks-dependency-live` bajo *SKILLS* invoca el skill, no el subagente.)
 
-   ![Elegir el subagente](images/10-select-registered-specialist.png)
+   ![/agent > databricks-dependency-live](images/newui-chat-pick.png)
 
-   ![Subagente seleccionado en el chat](images/11-selected-specialist-composer.png)
+   **1** `/agent` y el nombre del subagente · **2** elegid `databricks-dependency-live` en la lista.
+
+   ![Chip Agent: databricks-dependency-live y el prompt](images/newui-chat-ready.png)
+
+   **1** chip **Agent: databricks-dependency-live** · **2** el prompt del punto 2 (sin `@`) ·
+   **3** enviar.
 
 2. Primero la lista:
 

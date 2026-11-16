@@ -154,7 +154,10 @@ Three objects, created in this order: **Python tool → Skill → Subagent**. Re
 
 **Build + configure > Agent Canvas > Create ▾ (arrow) > Tool › Python tool**
 
-![Create > Tool > Python tool](docs/images/01-builder-create-python-tool.png)
+![Build + configure > Agent Canvas > Create ▾ > Tool > Python tool](docs/images/newui-menu.png)
+
+**1** Build + configure · **2** Agent Canvas · **3** the ▾ arrow next to **Create** (not the button) ·
+**4** Tool › · **5** **Python tool**.
 
 On the **Code** tab:
 
@@ -165,15 +168,24 @@ On the **Code** tab:
 | Timeout | `300` seconds |
 | Code | Paste the whole [`sre-usecase-builder-kit.py`](sre-usecase-builder-kit.py). No edits needed |
 
-![Code tab: name, description, timeout, code](docs/images/02-python-tool-code.png)
+![Code tab: name, timeout, description, code](docs/images/newui-code.png)
+
+**1** *Tool Name* `sre-usecase-builder-kit` (36 characters max.) · **2** *Timeout (seconds)* `300` ·
+**3** *Description* · **4** code editor: Ctrl+A and paste the whole file · **5** *Create tool*, grey until you
+run a test.
 
 On the **Identity** tab, leave **Enable Azure Identity OFF**. The kit uses the agent managed identity that the sandbox already provides.
 
-![Identity tab: leave OFF](docs/images/03-python-tool-identity-off.png)
+![Identity tab: leave OFF](docs/images/newui-identity.png)
+
+**1** Identity tab · **2** *Enable Azure Identity* Off.
 
 **Create tool stays disabled until you run a test.** Open **Test playground**, set `operation` = `catalog`, and click **Test**:
 
-![Test playground: operation=catalog, Test](docs/images/04-python-tool-test-playground.png)
+![Test playground: operation=catalog, Test](docs/images/newui-playground.png)
+
+**1** Test playground tab · **2** **Test** · **3** `operation` = `catalog` (the boxes start empty) ·
+**4** *Create tool*, still grey.
 
 Expected result: **Function test succeeded**, with `status: OK`, `kit_version: 3.0.0` and the recipe list:
 
@@ -187,7 +199,9 @@ Then click **Create tool**:
 
 **Build + configure > Agent Canvas > Create ▾ > Skill**
 
-![Create > Skill](docs/images/06-builder-create-skill.png)
+![Create ▾ > Skill](docs/images/newui-skill-menu.png)
+
+**1** the ▾ arrow next to **Create** · **2** **Skill**.
 
 | Field | Value |
 |---|---|
@@ -195,40 +209,64 @@ Then click **Create tool**:
 | Description | First paragraph of the front matter in [`skills/sre-usecase-builder/SKILL.md`](skills/sre-usecase-builder/SKILL.md) (`description:`) |
 | SKILL.md content | The whole [`SKILL.md`](skills/sre-usecase-builder/SKILL.md) |
 
-![Skill form](docs/images/07-skill-form.png)
+The order matters: **first** paste the whole `SKILL.md` in the editor on the right. Its front matter fills
+*Name* and *Description*. Choose the tool **after** pasting: pasting the full file replaces the front matter
+and drops a tool chosen before.
 
-In **Choose tools**, select `sre-usecase-builder-kit`:
+![Skill form: paste SKILL.md first](docs/images/newui-skill.png)
 
-![Skill: choose tools](docs/images/08-skill-choose-tools.png)
+**1** SKILL.md editor: paste the whole file first · **2** *Name* and **3** *Description* are filled in ·
+**4** *Choose tools* (next).
 
-Click **Create**:
+In **Choose tools**, search `sre-usecase-builder-kit`, expand the **PythonFunctionTool** group, tick only
+that tool (never the group checkbox) and click **Close panel**:
 
-![Skill: create](docs/images/09-skill-create.png)
+![Skill: choose tools](docs/images/newui-skill-tools.png)
+
+**1** search · **2** expand the *PythonFunctionTool* group · **3** tick only `sre-usecase-builder-kit` ·
+**4** *Close panel*.
+
+Check the tool chip and the `tools:` line in the editor, then click **Create**:
+
+![Skill: create](docs/images/newui-skill-chip.png)
+
+**1** tool chip · **2** `tools:` line in the front matter · **3** *Create*.
 
 ### B3. Subagent `sre-usecase-builder`
 
-**Build + configure > Agent Canvas > Create ▾ > Custom Agent** (or the **Create** button)
+**Build + configure > Agent Canvas > Create ▾ > Custom agent** (or the **Create** button)
 
-![Create > Custom Agent](docs/images/10-builder-create-agent.png)
+![Create button or Create ▾ > Custom agent](docs/images/newui-agent-menu.png)
+
+**1** **Create** button (opens the form directly) · **2** the ▾ arrow · **3** *Custom agent* (same form).
 
 | Field | Value |
 |---|---|
 | Name | `sre-usecase-builder` |
 | Instructions | The whole [`skills/subagent-instructions.md`](skills/subagent-instructions.md) |
 
-![Agent name and instructions](docs/images/11-agent-name-instructions.png)
+![Agent name and instructions](docs/images/newui-agent.png)
+
+**1** *Custom agent name* · **2** *Instructions* · **3** *Choose skills* · **4** *Choose tools*.
 
 **Choose skills** → `sre-usecase-builder`:
 
-![Agent: choose skills](docs/images/12-agent-choose-skills.png)
+![Agent: choose skills](docs/images/newui-agent-skills.png)
+
+**1** filter · **2** tick only `sre-usecase-builder` (not *Select all*) · **3** *Close panel*.
 
 **Choose tools** → `sre-usecase-builder-kit`:
 
-![Agent: choose tools](docs/images/13-agent-choose-tools.png)
+![Agent: choose tools](docs/images/newui-agent-tools.png)
 
-Click **Create**:
+**1** search · **2** expand the *PythonFunctionTool* group · **3** tick only `sre-usecase-builder-kit` ·
+**4** *Close panel*.
 
-![Agent: create](docs/images/14-agent-create.png)
+Check the two chips and click **Create**:
+
+![Agent: create](docs/images/newui-agent-chips.png)
+
+**1** skill chip · **2** tool chip · **3** *Create*.
 
 > Selecting skills or tools on a custom agent **replaces** the global defaults for that agent. This is intended: the builder only needs its own skill and tool.
 
@@ -236,18 +274,24 @@ Click **Create**:
 
 ## Use it: create a new use case from chat
 
-Open a **New chat**, type `/agent` and pick **sre-usecase-builder**:
+Open a **New chat**, type `/` and pick the **/agent** command, then type and pick **sre-usecase-builder**:
 
-![Type /agent](docs/images/15-chat-agent-command.png)
+![Type / and pick /agent](docs/images/newui-chat-slash.png)
 
-![Pick sre-usecase-builder](docs/images/16-chat-pick-subagent.png)
+**1** New chat · **2** type `/` · **3** the **/agent** command.
+
+![Pick sre-usecase-builder](docs/images/newui-chat-pick.png)
+
+**1** `/agent` + the subagent name · **2** pick `sre-usecase-builder`.
 
 Describe the idea in one or two sentences, in any language. Mention the data if you know where it is (workspace,
 SharePoint site, storage account); if you don't, the builder discovers it or leaves a placeholder.
 
 > I need a weekly report of orphaned managed disks (not attached to any VM) across my subscriptions, with size and SKU, so we can clean up waste.
 
-![Describe the idea](docs/images/17-chat-describe-idea.png)
+![Describe the idea](docs/images/newui-chat-ready.png)
+
+**1** the **Agent: sre-usecase-builder** chip · **2** the idea · **3** send.
 
 More ready-to-use prompts are in **[prompts.md](prompts.md)**.
 
@@ -299,7 +343,7 @@ The answer and the downloadable `<name>-SETUP.md` contain the exact steps. In sh
 | 2 | **Build + configure > Agent Canvas > Create ▾ > Tool › Python tool** | Block 1: name, description, timeout, parameters, code. Identity tab OFF |
 | 3 | Test playground of that tool | Test in order: `mode=self_test` → `mode=discover` → `mode=report, publish=no` → `publish=yes` (only if publishing). Then **Create tool** |
 | 4 | **Create ▾ > Skill** | Block 2, with the new tool selected |
-| 5 | **Create ▾ > Custom Agent** | Block 3, with the new skill and tool selected |
+| 5 | **Create ▾ > Custom agent** | Block 3, with the new skill and tool selected |
 | 6 | Chat: `/agent <name>` | Run the report |
 | 7 | **Automation > Create ▾ > Scheduled task** | Block 4: task name, response subagent, prompt, frequency |
 
@@ -307,7 +351,9 @@ A complete example of every generated file is in [`examples/orphaned-managed-dis
 
 **Run the generated subagent.** In a new chat, type `/agent` and pick the generated subagent (`orphaned-managed-disks` in this example):
 
-![Pick the generated subagent](docs/images/23-generated-agent-pick.png)
+![Pick the generated subagent](docs/images/newui-chat-pick-orphaned-managed-disks.png)
+
+**1** `/agent` + the subagent name · **2** pick `orphaned-managed-disks`.
 
 It runs the tool and answers with the verdict, KPIs, top findings and what changed:
 
@@ -323,10 +369,16 @@ This is the HTML report structure, shown here on synthetic `self_test` data
 ![Generated HTML report (self-test data)](docs/images/27-generated-report-selftest.png)
 
 **Schedule it.** Go to **Automation > Create ▾ > Scheduled task**. Use the task name, **Response subagent** and prompt from block 4.
-Set **Frequency** to the generated cron (`0 7 * * 1` = Mondays 07:00 UTC) via **Custom cron**, or pick the equivalent Weekly option.
-The time list is in **your local time zone**, so 08:00 CET is 07:00 UTC.
+Set **Frequency** to **Custom cron** and paste the generated cron (`0 7 * * 1` = Mondays 07:00 UTC) in
+**Cron expression (UTC)**, or pick the equivalent Weekly option. The Daily/Weekly/Monthly time list is in
+**your local time zone**, so 08:00 CET is 07:00 UTC. For one thread per run, set **Message grouping for
+updates** to **New chat thread for each run**.
 
-![Scheduled task](docs/images/26-scheduled-task.png)
+![Scheduled task](docs/images/newui-task.png)
+
+**1** *Task name* · **2** *Response subagent* · **3** *Task details* (the prompt of block 4) ·
+**4** *Frequency* = *Custom cron* · **5** *Cron expression (UTC)* · **6** *Message grouping for updates* =
+*New chat thread for each run* · **7** *Create task*.
 
 When publishing is enabled (`publish=yes` in the prompt), each run stores a history snapshot. The next run compares
 against it: new findings, resolved findings, and added, removed and changed rows, with KPI trend arrows.

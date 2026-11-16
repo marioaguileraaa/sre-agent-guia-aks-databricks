@@ -5,7 +5,8 @@
 
 > 🔄 **Actualización 16/11/2026: leed primero [este bloque de `LEEME-PRIMERO.md`](../LEEME-PRIMERO.md#-actualización-16112026--leed-esto-primero).**
 > Hay que volver a pegar el `.py` (si no, `identity_mismatch`), poner `kubernetes_enabled: False`
-> ([por qué](#kubernetes-hoy-http-502-de-la-plataforma)) y el portal ha cambiado respecto a las capturas.
+> ([por qué](#kubernetes-hoy-http-502-de-la-plataforma)) y el portal ha cambiado respecto a octubre
+> (las capturas del portal de esta guía ya son las de hoy).
 
 El subagente `aks-waf-live` revisa vuestros clústeres AKS (**hasta 500, repartidos en todas las
 suscripciones del tenant**) y genera un informe con:
@@ -331,13 +332,27 @@ APPROVED_CLUSTERS = {
 ### Paso A3 · Pegar el código nuevo en la herramienta
 
 1. **sre.azure.com → vuestro agente → Build + configure → Agent Canvas** (antes *Builder*).
-2. **Table view** → tarjeta **Python tools** (o «…» → *Python tools*) → buscad
-   **`generate-aks-waf-report`** → clic en el nombre → lápiz. (También en **Canvas view**: pastilla
-   *Subagent* → `aks-waf-live` → nodo **`generate-aks-waf-report`** → lápiz.)
+2. **Table view** → en la tarjeta *Tools & skills*, **Python tools** → buscad
+   **`generate-aks-waf-report`** → clic en el nombre → lápiz (su tooltip dice *Edit YAML*, pero abre el
+   formulario). (También en **Canvas view**: pastilla *Custom agent* → `aks-waf-live` → nodo
+   **`generate-aks-waf-report`** → lápiz.)
+
+   ![Table view > Python tools > buscar > lápiz](images/newui-edit-tool-open.png)
+
+   **1** Table view · **2** Python tools (tarjeta *Tools & skills*) · **3** buscador · **4** clic en el
+   nombre · **5** lápiz.
+
 3. Se abre **Edit Python tool** (pestañas *Code / Test playground / Identity*). En **Code**: clic en
-   el editor, `Ctrl+A` y pegad el `.py` completo editado en A2. No uséis *Generate*.
+   el editor, `Ctrl+A` y pegad el `.py` completo editado en A2. No uséis *Generate* ni cambiéis el nombre.
+
+   ![Edit Python tool, pestaña Code](images/newui-edit-tool-code.png)
+
+   **1** pestaña Code · **2** *Tool Name* `generate-aks-waf-report` (no cambiarlo; el campo es estrecho y
+   no se ve entero) · **3** *Timeout (seconds)* `900` · **4** editor: `Ctrl+A` y pegar el `.py` completo ·
+   **5** *Save*, en gris hasta pulsar **Test** ([A4](#paso-a4--parámetros-automáticos-cluster_name-sin-enum)).
+
 4. Comprobad que **Timeout (seconds) = 900** (el máximo) y que, en **Identity**, **Enable Azure
-   Identity** sigue en **Off** (ver el aviso y las capturas en [B3](#paso-b3--crear-la-herramienta-python)).
+   Identity** sigue en **Off** (ver el aviso y la captura en [B3](#paso-b3--crear-la-herramienta-python)).
 
 ### Paso A4 · Parámetros automáticos (`cluster_name` sin enum)
 
@@ -348,7 +363,8 @@ viable y **no hace falta**, porque el propio código rechaza cualquier nombre qu
 `APPROVED_CLUSTERS` (`invalid_parameter`).
 
 Comprobadlo en la pestaña **Test playground**: deben salir 12 cajas, incluidas `cluster_name` y
-`cluster_names`. Referencia completa: [`tool-parameters.schema.json`](tool-parameters.schema.json).
+`cluster_names` (capturas en [⭐ Test playground](#-test-playground-qué-valores-poner-en-cada-parámetro)).
+Referencia completa: [`tool-parameters.schema.json`](tool-parameters.schema.json).
 
 Haced las **3 pruebas** de [Test playground](#-test-playground-qué-valores-poner-en-cada-parámetro)
 (la primera es `operation = list_clusters`; debe devolver `status: ok`, `total` = número de
@@ -357,8 +373,14 @@ que pulsáis **Test**).
 
 ### Paso A5 · Actualizar el skill
 
-**Agent Canvas → Table view → pestaña Skills** → buscad `aks-waf-live` → lápiz → **Edit Skill**. El
-orden importa:
+**Agent Canvas → Table view** → en la tarjeta *Tools & skills*, **Skills** → buscad `aks-waf-live` →
+clic en el nombre → lápiz → **Edit Skill**.
+
+![Table view > Skills > buscar > lápiz](images/newui-edit-skill-open.png)
+
+**1** Skills (tarjeta *Tools & skills*) · **2** buscador · **3** clic en el nombre · **4** lápiz.
+
+El orden importa:
 
 1. En el editor **SKILL.md** (a la derecha): `Ctrl+A` y pegad
    [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md) (incluye la nueva sección
@@ -366,39 +388,53 @@ orden importa:
 2. **Después**: **Choose tools** → buscad `generate-aks-waf-report` → desplegad el grupo
    **PythonFunctionTool (n)** → marcad solo esa herramienta (nunca la casilla del grupo) →
    **Close panel**.
+
+   ![Edit Skill: Choose tools después de pegar](images/newui-edit-skill-tools.png)
+
+   **1** buscador · **2** desplegad el grupo *PythonFunctionTool* · **3** marcad solo
+   `generate-aks-waf-report` · **4** *Close panel*.
+
 3. Comprobad el chip de la herramienta y que el editor muestre `tools:` → **Save**.
+
+   ![Edit Skill listo para guardar](images/newui-edit-skill.png)
+
+   **1** `tools:` con `generate-aks-waf-report` en la cabecera · **2** chip de la herramienta ·
+   **3** *Save*.
 
 Si se hace al revés, al pegar el `SKILL.md` completo se sustituye su cabecera (*front matter*) y la
 herramienta desaparece del skill. La herramienta adjunta sigue siendo solo `generate-aks-waf-report`.
 
-![Skill guardado](images/aks04-step03-skill-readback.png)
-
-**1** pestaña Skills · **2** única herramienta adjunta · **3** `SKILL.md` que hay que sustituir.
-
 ### Paso A6 · Actualizar el subagente
 
-**Table view → pestaña Sub Agents** → buscad `aks-waf-live` → lápiz (o «…» de la fila → *Edit*) →
-**Edit custom agent** (pestañas *Form / YAML*). En **Instructions**, `Ctrl+A` y pegad el bloque de
+**Table view** → en la tarjeta *Agents*, **Custom agents** (antes *Sub Agents*) → buscad
+`aks-waf-live` → clic en el nombre → lápiz → **Edit custom agent** (pestañas *Form / YAML*).
+
+![Table view > Custom agents > buscar > lápiz](images/newui-edit-agent-open.png)
+
+**1** Custom agents (tarjeta *Agents*) · **2** buscador · **3** clic en el nombre · **4** lápiz.
+
+En **Instructions**, `Ctrl+A` y pegad el bloque de
 [`subagent-instructions-and-prompts.md` → *Copy-ready instructions*](subagent-instructions-and-prompts.md#copy-ready-instructions).
 Comprobad los chips (skill `aks-waf-live` y herramienta `generate-aks-waf-report`) → **Save**. No uséis
 *Refine with AI* ni *View AI suggestions*. Las nuevas instrucciones añaden cómo paginar la flota y
 revisar por lotes de 5.
 
-> En *Table view*, la columna *Tools* puede decir «Inherits 165 tools · 76 skills» aunque el
-> subagente tenga 1 herramienta y 1 skill: lo que vale son los chips del formulario.
+![Edit custom agent](images/newui-edit-agent.png)
+
+**1** *Instructions*: `Ctrl+A` y pegar el bloque *Copy-ready instructions* · **2** chip del skill
+`aks-waf-live` · **3** chip de la herramienta `generate-aks-waf-report` · **4** *Save*.
+
+> En *Table view*, la columna *Tools* puede decir «Inherits 166 tools · 76 skills» (los números
+> cambian) aunque el subagente tenga 1 herramienta y 1 skill: lo que vale son los chips del formulario.
 
 (Opcional) Comprobad en **Build + configure → Extensions → Tools** → pestaña *Custom tools* que la
 herramienta sale **On / Allow**, y en **Extensions → Skills** → *Custom skills* que el skill sale **On**.
 
-![Subagente guardado](images/aks04-step04-agent-readback.png)
-
-**1** pestaña Sub Agents · **2** solo 1 herramienta · **3** `generate-aks-waf-report` · **4** solo el
-skill `aks-waf-live`.
-
 ### Paso A7 · Probar
 
 Abrid un **chat nuevo**, elegid el subagente con **/agent** → `aks-waf-live` (comprobad el chip
-**Agent: aks-waf-live**) y usad el [prompt de flota](#prompts-para-usarlo).
+**Agent: aks-waf-live**) y usad el [prompt de flota](#prompts-para-usarlo). Capturas del selector y del
+chip en [B6](#paso-b6--probar-en-un-chat-nuevo).
 
 ---
 
@@ -429,10 +465,10 @@ Igual que el [Paso A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo).
 1. **Build + configure → Agent Canvas → Create ▾** (la flecha junto a *Create*) **→ Tool › →
    Python tool**.
 
-   ![Menú Create > Tool > Python tool](images/aks04-step02-01-python-menu.png)
+   ![Build + configure > Agent Canvas > Create ▾ > Tool > Python tool](images/newui-menu.png)
 
-   **1–2** Builder › Agent Canvas · **3** flecha de **Create** · **4** **Python tool**. *(Captura de
-   octubre: hoy el menú se llama **Build + configure**.)*
+   **1** Build + configure · **2** Agent Canvas · **3** la flecha ▾ de **Create** (no el botón) ·
+   **4** Tool › · **5** **Python tool**.
 
 2. Pestaña **Code** (el diálogo tiene 3 pestañas: *Code / Test playground / Identity*):
    - **Tool Name:** `generate-aks-waf-report` (el campo admite 36 caracteres).
@@ -445,10 +481,11 @@ Igual que el [Paso A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo).
    - No hay campo *Requirements*: el entorno Python del SRE Agent ya trae azure-identity, PyYAML y
      Pillow ([`requirements.txt`](requirements.txt) es solo informativo).
 
-   ![Pestaña Code](images/aks04-step02-02-code.png)
+   ![Create a Python tool, pestaña Code](images/newui-code.png)
 
-   **1** nombre · **2** pestaña Code · **3** editor donde se pega el fichero completo (en la captura
-   el código está tapado a propósito).
+   **1** *Tool Name* `generate-aks-waf-report` (máx. 36 caracteres; el campo es estrecho y no se ve
+   entero) · **2** *Timeout (seconds)* `900` · **3** *Description* · **4** editor: `Ctrl+A` y pegar el
+   `.py` completo (se ve el principio del fichero) · **5** *Create tool*, en gris hasta pulsar **Test**.
 
 3. **Parámetros (12): automáticos.** No hay editor de parámetros: salen de `def main(...)` al pegar
    el código. Tipos y valores por defecto (referencia en
@@ -469,18 +506,22 @@ Igual que el [Paso A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo).
    | `limit` | int | `25` | 1–100 |
    | `offset` | int | `0` | Para paginar |
 
-   ![Parámetros en Test playground](images/aks04-step02-03-typed-parameters.png)
+   ![Test playground: los 12 parámetros, parte de arriba](images/newui-playground-1.png)
 
-   En **Test playground** se ven los 12 parámetros; **1–3** `status`, `limit` y `offset` con sus
-   valores por defecto (`all`, `25`, `0`). *(Captura de octubre: hoy las 12 cajas salen vacías y hay
-   que escribir cada valor.)*
+   ![Test playground: los 12 parámetros, parte de abajo](images/newui-playground-1-b.png)
+
+   En la pestaña **Test playground** salen las 12 cajas **vacías** (sin valores por defecto ni
+   desplegables): hay que escribir cada valor. En las capturas, los de la
+   [prueba 1](#prueba-1--configuración-segundos-no-llama-a-azure). Arriba: **1** pestaña Test
+   playground · **2** **Test** · **3** `operation` = `list_clusters` · **4** *Create tool* en gris.
+   Abajo: **2** `limit` = `25` y **3** `offset` = `0` (cajas *Enter int value*: números).
 
 4. Pestaña **Identity**: dejar **Enable Azure Identity en Off**. El código ya usa la identidad
    del SRE Agent mediante su Client ID.
 
-   ![Identity Off](images/aks04-step02-04-identity.png)
+   ![Identity Off](images/newui-identity.png)
 
-   **1** pestaña Identity · **2** interruptor en **Off**.
+   **1** pestaña Identity · **2** *Enable Azure Identity* en **Off**.
 
    > ⚠️ No lo encendáis, ni siquiera para mirar: el portal añade 4 líneas al principio del código
    > (`# Azure Identity Authentication`, `from azure.identity import DefaultAzureCredential`,
@@ -492,37 +533,93 @@ Igual que el [Paso A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo).
 
 ### Paso B4 · Crear el skill
 
-**Build + configure → Agent Canvas → Create ▾ → Skill** → **Create skill**. El orden importa:
+**Build + configure → Agent Canvas → Create ▾ → Skill** → **Create skill**.
+
+![Create ▾ > Skill](images/newui-skill-menu.png)
+
+**1** la flecha ▾ de **Create** · **2** **Skill**.
+
+El orden importa:
 
 1. Pegad [`skills/aks-waf-live/SKILL.md`](skills/aks-waf-live/SKILL.md) en el editor de la derecha
    (rellena *Name* `aks-waf-live` y *Description* con su cabecera).
+
+   ![Create skill: pegar el SKILL.md](images/newui-skill.png)
+
+   **1** editor *SKILL.md*: pegar el fichero completo (primero) · **2** *Name* y **3** *Description*
+   se rellenan solos · **4** *Choose tools* (después).
+
 2. **Después**: **Choose tools** → buscad `generate-aks-waf-report` → desplegad el grupo
    **PythonFunctionTool (n)** → marcad solo esa herramienta (nunca la casilla del grupo) →
    **Close panel**.
+
+   ![Choose tools: buscar, desplegar el grupo y marcar la herramienta](images/newui-skill-tools.png)
+
+   **1** buscador · **2** desplegad el grupo *PythonFunctionTool* · **3** marcad solo
+   `generate-aks-waf-report` · **4** *Close panel*.
+
 3. Comprobad el chip y que el editor muestre `tools:` → **Create**.
+
+   ![Create skill listo](images/newui-skill-chip.png)
+
+   **1** chip de la herramienta · **2** `tools:` con `generate-aks-waf-report` en la cabecera ·
+   **3** *Create*.
 
 Si se elige la herramienta antes de pegar, al pegar el `SKILL.md` se sustituye la cabecera y la
 herramienta desaparece.
 
 ### Paso B5 · Crear el subagente
 
-Botón **Create** (abre directamente *Create a custom agent*; también **Create ▾ → Custom Agent**):
+Botón **Create** (abre directamente *Create a custom agent*; también **Create ▾ → Custom agent**):
+
+![Botón Create o Create ▾ > Custom agent](images/newui-agent-menu.png)
+
+**1** botón **Create** (abre directamente el formulario) · **2** la flecha ▾ · **3** *Custom agent*
+(mismo formulario).
 
 - **Custom agent name:** `aks-waf-live`
 - **Instructions:** el bloque *Copy-ready instructions* de
   [`subagent-instructions-and-prompts.md`](subagent-instructions-and-prompts.md#copy-ready-instructions).
+
+  ![Create a custom agent: nombre e instrucciones](images/newui-agent.png)
+
+  **1** *Custom agent name* · **2** *Instructions* (pegar el bloque) · **3** *Choose skills* ·
+  **4** *Choose tools*.
+
+- **Choose skills:** **solo** `aks-waf-live`.
+
+  ![Choose skills: filtrar y marcar el skill](images/newui-agent-skills.png)
+
+  **1** filtro · **2** marcad solo `aks-waf-live` (no *Select all*) · **3** *Close panel*.
+
 - **Choose tools:** **solo** `generate-aks-waf-report` (desplegad los grupos; no lo dejéis vacío:
   vacío puede heredar herramientas globales).
-- **Choose skills:** **solo** `aks-waf-live`.
-- No uséis *Refine with AI* ni *View AI suggestions*. Después, **Create**.
 
-(Capturas de cómo queda: ver [A5](#paso-a5--actualizar-el-skill) y [A6](#paso-a6--actualizar-el-subagente).)
+  ![Choose tools: buscar, desplegar el grupo y marcar la herramienta](images/newui-agent-tools.png)
+
+  **1** buscador · **2** desplegad el grupo *PythonFunctionTool* · **3** marcad solo
+  `generate-aks-waf-report` · **4** *Close panel*.
+
+- No uséis *Refine with AI* ni *View AI suggestions*. Comprobad los chips y, después, **Create**.
+
+  ![Create a custom agent listo](images/newui-agent-chips.png)
+
+  **1** chip del skill `aks-waf-live` · **2** chip de la herramienta `generate-aks-waf-report` ·
+  **3** *Create*.
 
 ### Paso B6 · Probar en un chat nuevo
 
 **New chat** → escribid **/agent** → elegid `aks-waf-live` → comprobad el chip **Agent: aks-waf-live**
 → pegad el prompt. (Escribir `@` ya no abre selector, y `/aks-waf-live` bajo *SKILLS* invoca el
 skill, no el subagente.)
+
+![/agent > aks-waf-live](images/newui-chat-pick.png)
+
+**1** `/agent` y el nombre del subagente · **2** elegid `aks-waf-live` en la lista.
+
+![Chip Agent: aks-waf-live y el prompt](images/newui-chat-ready.png)
+
+**1** chip **Agent: aks-waf-live** · **2** el prompt (sin `@`) · **3** enviar.
 
 ```text
 Lista los clústeres aprobados con operation=list_clusters.
@@ -539,11 +636,11 @@ Genera la revisión completa de arquitectura y configuración de AKS para <nombr
 ## ⭐ Test playground: qué valores poner en cada parámetro
 
 Es la **pestaña Test playground** del diálogo de la herramienta (**Build + configure → Agent Canvas →
-Table view → Python tools → `generate-aks-waf-report` → lápiz → Test playground**), no el botón
-*Test playground* de la barra del Agent Canvas, que es otra cosa. Pulsad **Test**: salen 12 cajas
-**vacías** (sin valores por defecto ni desplegables). **Escribid todos los valores de la tabla de
-cada prueba**; lo marcado con ← es lo que cambia entre pruebas. **Save** / **Create tool** siguen en
-gris hasta que la prueba se ha ejecutado (no es un problema de rol).
+Table view → Python tools** (tarjeta *Tools & skills*) **→ `generate-aks-waf-report` → lápiz → Test
+playground**), no el botón *Test playground* de la barra del Agent Canvas, que es otra cosa. Pulsad
+**Test**: salen 12 cajas **vacías** (sin valores por defecto ni desplegables). **Escribid todos los
+valores de la tabla de cada prueba**; lo marcado con ← es lo que cambia entre pruebas. **Save** /
+**Create tool** siguen en gris hasta que la prueba se ha ejecutado (no es un problema de rol).
 
 > ⏱️ **Límite del playground:** la prueba se corta a los **~100 s con HTTP 504**, aunque el Timeout
 > sea 900. Con Kubernetes activado, las pruebas 2 y 3 tardan hoy 84–100 s por clúster en marcha; con
@@ -584,6 +681,14 @@ Valida que el bloque CONFIGURACION está bien pegado y os da los nombres exactos
 | `limit` | `25` |
 | `offset` | `0` |
 
+![Prueba 1 en Test playground, parte de arriba](images/newui-edit-playground-1.png)
+
+![Prueba 1 en Test playground, parte de abajo](images/newui-edit-playground-1-b.png)
+
+Arriba: **1** pestaña Test playground · **2** **Test** · **3** `operation` = `list_clusters` · **4** *Save*,
+en gris hasta pulsar Test. Abajo (desplazando la pestaña): **2** `limit` = `25` · **3** `offset` = `0`.
+Los demás valores, como en la tabla.
+
 Resultado esperado (resumido):
 
 ```json
@@ -620,6 +725,12 @@ están bien. Tarda ~15 s por clúster con `kubernetes_enabled: False`; con Kuber
 | `cluster_name` | **`<nombre copiado de la prueba 1>`** ← cambiar |
 | resto | los de la prueba 1: `cluster_names`, `namespace` y `workload_name` vacíos; `all`; `25`; `0` |
 
+![Prueba 2 en Test playground](images/newui-edit-playground-2.png)
+
+**1** pestaña Test playground · **2** **Test** · **3** `operation` = `query` · **4** `view` = `coverage` ·
+**5** `cluster_name` = un nombre de la prueba 1 (en la captura, el ejemplo `aks-pro-01`) · **6** *Save*,
+en gris hasta pulsar Test.
+
 Resultado esperado: `status: ok` y una fila por fuente (ARM, Kubernetes, Advisor, costes…) con su
 estado. Cada respuesta trae solo unas pocas fuentes: si `next_offset` no es `null`, repetid con ese
 `offset`, o poned `status` = `denied` (o `error`) para ver solo las que fallan.
@@ -641,6 +752,12 @@ estado. Cada respuesta trae solo unas pocas fuentes: si `next_offset` no es `nul
 | `operation` | `report` (el valor por defecto) |
 | `cluster_name` | **`<nombre copiado de la prueba 1>`** ← cambiar |
 | resto | **todo por defecto**, escrito en cada caja (regla 3) |
+
+![Prueba 3 en Test playground](images/newui-edit-playground-3.png)
+
+**1** pestaña Test playground · **2** **Test** · **3** `operation` = `report` (escrito) · **4**
+`cluster_name` = un nombre de la prueba 1 (en la captura, `aks-pro-01`) · **5** *Save*, en gris hasta
+pulsar Test.
 
 Debe terminar con `status: ok` o `partial` (`partial` = alguna fuente sin leer, p. ej. Kubernetes;
 los 4 ficheros se generan igual). Los 4 ficheros descargables se ven mejor desde el **chat** con el

@@ -167,10 +167,10 @@ falla con `NameError: name 'CLIENT_LOGO_ALT' is not defined`.
 
 ### Cambio 3 · Pegar el código nuevo
 
-**sre.azure.com → agente → Build + configure → Agent Canvas → Table view** → tarjeta **Python tools**
-(o «…» → *Python tools*) → buscad **`generate-aks-waf-report`** → clic en el nombre → lápiz →
+**sre.azure.com → agente → Build + configure → Agent Canvas → Table view** → en la tarjeta
+*Tools & skills*, **Python tools** → buscad **`generate-aks-waf-report`** → clic en el nombre → lápiz →
 pestaña **Code** → clic en el editor, `Ctrl+A` y pegad el `.py` del cambio 2. (También desde
-*Canvas view*: pastilla *Subagent* → `aks-waf-live` → nodo de la herramienta → lápiz.)
+*Canvas view*: pastilla *Custom agent* → `aks-waf-live` → nodo de la herramienta → lápiz.)
 
 Comprobad que **Timeout (seconds) = 900** y que en **Identity**, **Enable Azure Identity = Off**. No lo
 encendáis: el portal añade 4 líneas al principio del código (`# Azure Identity Authentication`,
@@ -190,7 +190,8 @@ que pulsáis **Test**).
 
 ### Cambios 5 y 6 · Skill y subagente
 
-- **Skill:** **Agent Canvas → Table view → Skills** → `aks-waf-live` → lápiz. El orden importa:
+- **Skill:** **Agent Canvas → Table view** → en la tarjeta *Tools & skills*, **Skills** → `aks-waf-live` →
+  lápiz. El orden importa:
   1. En el editor *SKILL.md*, `Ctrl+A` y pegad `skills/aks-waf-live/SKILL.md` (trae la nueva sección
      *Large fleets*).
   2. **Después**: **Choose tools** → buscad `generate-aks-waf-report` → desplegad el grupo
@@ -199,12 +200,13 @@ que pulsáis **Test**).
   3. Comprobad el chip de la herramienta y que el editor tenga `tools:` → **Save**.
 
   Al pegar el `SKILL.md` se sustituye su cabecera y la herramienta desaparece: por eso se elige después.
-- **Subagente:** **Table view → Sub Agents** → `aks-waf-live` → lápiz → **Edit custom agent** → en
+- **Subagente:** **Table view** → en la tarjeta *Agents*, **Custom agents** (antes *Sub Agents*) →
+  `aks-waf-live` → lápiz → **Edit custom agent** → en
   **Instructions**, `Ctrl+A` y pegad el bloque *Copy-ready instructions* de
   `subagent-instructions-and-prompts.md` → comprobad los chips (skill `aks-waf-live` y herramienta
   `generate-aks-waf-report`) → **Save**. No uséis *Refine with AI* ni *View AI suggestions*.
 - Los dos siguen teniendo **solo** la herramienta `generate-aks-waf-report`. En *Table view* la
-  columna *Tools* puede decir «Inherits 165 tools · 76 skills»: lo que vale son los chips del formulario.
+  columna *Tools* puede decir «Inherits … tools · … skills»: lo que vale son los chips del formulario.
 
 ### ⭐ AKS · Valores del Test playground
 
