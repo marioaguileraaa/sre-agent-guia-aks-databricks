@@ -163,13 +163,13 @@ envío y que el correo o el mensaje ha llegado.
 
 ## 6. Prompts listos para pegar en *Task details*
 
-Cambiad lo que va entre `< >`. Si solo queréis correo o solo Teams, borrad la otra línea.
+Cambiad lo que va entre `< >`. Si solo queréis correo o solo Teams, borrad la otra línea. Si fijasteis el **To** en el conector (paso 1.4), manda ese; si no, el agente usa `<destinatarios>`.
 
 **Entra** (Response subagent `credential-monitor-full`, semanal `0 7 * * 1`):
 
 ```text
 Ejecuta la auditoría de credenciales de Entra con generate-entra-credential-expiration (solo lectura, sin remediar nada).
-Envía un correo con office365_office365_SendEmailV2, asunto "Auditoría semanal de credenciales Entra - <fecha de hoy>", en HTML y en español: resumen ejecutivo (total, vencidas, críticas 1-7 días, 8-30, 31-90, más de 90), cobertura, tabla con las credenciales críticas y vencidas más relevantes (aplicación, tipo, caducidad, responsable) y el enlace al informe HTML. Si la cobertura no es completa, dilo al principio.
+Envía un correo a <destinatarios> con office365_office365_SendEmailV2, asunto "Auditoría semanal de credenciales Entra - <fecha de hoy>", en HTML y en español: resumen ejecutivo (total, vencidas, críticas 1-7 días, 8-30, 31-90, más de 90), cobertura, tabla con las credenciales críticas y vencidas más relevantes (aplicación, tipo, caducidad, responsable) y el enlace al informe HTML. Si la cobertura no es completa, dilo al principio.
 Publica también con teams_teams_PostMessageToConversation en el equipo "<EQUIPO>", canal "<CANAL>", un resumen corto: totales por estado, las 5 críticas más urgentes y el enlace al informe HTML.
 ```
 
@@ -177,7 +177,7 @@ Publica también con teams_teams_PostMessageToConversation en el equipo "<EQUIPO
 
 ```text
 Revisa la flota de AKS en lotes de 5 clústeres con operation=query y view=coverage, y genera la revisión completa con operation=report para <nombre-aks> (añade aquí los clústeres críticos).
-Envía un correo con office365_office365_SendEmailV2, asunto "Revisión mensual de AKS - <fecha de hoy>", en HTML y en español: cobertura por suscripción, hallazgos altos por clúster, las 5 acciones prioritarias y el enlace al informe HTML.
+Envía un correo a <destinatarios> con office365_office365_SendEmailV2, asunto "Revisión mensual de AKS - <fecha de hoy>", en HTML y en español: cobertura por suscripción, hallazgos altos por clúster, las 5 acciones prioritarias y el enlace al informe HTML.
 Publica también con teams_teams_PostMessageToConversation en el equipo "<EQUIPO>", canal "<CANAL>", un resumen corto con los hallazgos altos y el enlace al informe.
 ```
 
@@ -185,7 +185,7 @@ Publica también con teams_teams_PostMessageToConversation en el equipo "<EQUIPO
 
 ```text
 Genera el informe completo de dependencias y configuración de Databricks para <workspace> con operation=report.
-Envía un correo con office365_office365_SendEmailV2, asunto "Revisión mensual de Databricks - <fecha de hoy>", en HTML y en español: resumen ejecutivo, hallazgos de seguridad y buenas prácticas por prioridad, oportunidades de ahorro y el enlace al informe HTML.
+Envía un correo a <destinatarios> con office365_office365_SendEmailV2, asunto "Revisión mensual de Databricks - <fecha de hoy>", en HTML y en español: resumen ejecutivo, hallazgos de seguridad y buenas prácticas por prioridad, oportunidades de ahorro y el enlace al informe HTML.
 Publica también con teams_teams_PostMessageToConversation en el equipo "<EQUIPO>", canal "<CANAL>", un resumen corto con los hallazgos prioritarios y el enlace al informe.
 ```
 
