@@ -27,6 +27,8 @@ from uuid import UUID, uuid4
 # Lo mas facil: ejecutar grant-aks-permissions.ps1, abrir el fichero que genera
 # (approved-clusters.generated.py) y sustituir aqui las 5 variables marcadas con (*):
 # SUBSCRIPTION_ID, TENANT_ID, MANAGED_IDENTITY_CLIENT_ID, CLUSTER_DEFAULTS y APPROVED_CLUSTERS.
+# Con AUTO_DISCOVERY = True (al final de este bloque) los clusters se descubren solos: para anadir clusters
+# basta con dar permisos con grant-aks-permissions.ps1. APPROVED_CLUSTERS queda solo para ajustes por cluster.
 SUBSCRIPTION_ID = "<SUBSCRIPTION_ID>"                 # (*) suscripcion por defecto (la de los clusters sin "subscription_id")
 TENANT_ID = "<TENANT_ID>"                             # (*) tenant; TODAS las suscripciones deben estar en este tenant
 MANAGED_IDENTITY_CLIENT_ID = "<SRE_AGENT_CLIENT_ID>"  # (*) Client ID (no Object ID) de la identidad del SRE Agent
@@ -301,7 +303,9 @@ CLUSTER_DEFAULTS = {
     "cost_timeframe": "month_to_date",
     "requirements": {},
 }
-# (*) Clusters aprobados: hasta 500, de cualquier suscripcion del tenant. Una linea por cluster:
+# (*) Clusters aprobados: hasta 500, de cualquier suscripcion del tenant. Una linea por cluster.
+#     Con AUTO_DISCOVERY = True es OPCIONAL: solo para ajustar un cluster (p. ej. "environment": "PRODUCTION");
+#     las entradas de ejemplo "<...>" se ignoran.
 #     "resource_group"  obligatorio
 #     "subscription_id" solo si el cluster NO esta en SUBSCRIPTION_ID
 #     "aks_name"        solo si la clave es un alias (p. ej. dos AKS con el mismo nombre en suscripciones distintas)
@@ -310,6 +314,11 @@ APPROVED_CLUSTERS = {
     # "<NOMBRE_AKS_2>": {"resource_group": "<RESOURCE_GROUP_AKS_2>", "subscription_id": "<OTRA_SUSCRIPCION>"},
     # "<NOMBRE_AKS_3>": {"resource_group": "<RESOURCE_GROUP_AKS_3>", "subscription_id": "<OTRA_SUSCRIPCION>", "environment": "PRODUCTION"},
 }
+# Descubrimiento automatico: el tool revisa TODOS los AKS que la identidad del agente puede leer (una consulta de
+# solo lectura a Azure Resource Graph en cada ejecucion). Los permisos los da grant-aks-permissions.ps1.
+AUTO_DISCOVERY = True
+# Opcional: limitar el descubrimiento a estas suscripciones. Vacio = todas las que la identidad puede leer.
+DISCOVERY_SUBSCRIPTION_IDS = []
 # ============================================================================================
 
 SIDECAR_TOKEN_ISSUER = "adc-msi-sidecar"
@@ -660,9 +669,13 @@ def write_report(snapshot):
 def main(operation: str = "report", view: str = "summary", cluster_name: str = "", namespace: str = "",
          workload_name: str = "", area: str = "all", level: str = "all", severity: str = "all",
          status: str = "all", limit: int = 25, offset: int = 0, cluster_names: str = "") -> dict:
-    """Collect one or several fixed approved clusters; never change source scope or identity."""
+    """Collect one or several approved or auto-discovered clusters; never change source scope or identity."""
+    global ROSTER
     try:
         params = validate_parameters(operation, view, cluster_name, namespace, workload_name, area, level, severity, status, limit, offset, cluster_names)
+        ROSTER = None
+        DISCOVERY_INFO.clear()
+        ROSTER = effective_roster()
         configs, configured = selection_configs(cluster_name, cluster_names)
         if operation == "list_clusters":
             return list_clusters_page(configured, limit, offset)
@@ -719,6 +732,10 @@ MAX_PAGES = 100
 MAX_ROWS = 20000
 MAX_RELATED_RESOURCES = 200
 MAX_APPROVED_CLUSTERS = 500
+ARG_API = "2022-10-01"
+MAX_DISCOVERY_PAGES = 5
+ROSTER = None
+DISCOVERY_INFO = {}
 MAX_REPORT_CLUSTERS = 5
 ACTIVE_SUBSCRIPTION_ID = None
 MAX_COLLECTION_SECONDS = 240
@@ -3434,13 +3451,16 @@ def validate_config(cluster_name):
         ("MANAGED_IDENTITY_CLIENT_ID", MANAGED_IDENTITY_CLIENT_ID),
     ):
         guid_setting(key, value)
-    if not isinstance(APPROVED_CLUSTERS, dict) or not 1 <= len(APPROVED_CLUSTERS) <= MAX_APPROVED_CLUSTERS:
+    roster = active_roster()
+    if not isinstance(roster, dict) or not 1 <= len(roster) <= MAX_APPROVED_CLUSTERS:
         raise EvidenceError("configuration_required", "Configure one to " + str(MAX_APPROVED_CLUSTERS) + " fixed approved clusters.", "configuration")
-    name = cluster_name or next(iter(APPROVED_CLUSTERS))
-    if name not in APPROVED_CLUSTERS:
-        raise EvidenceError("invalid_parameter", "cluster_name must exactly match the fixed operator allowlist.", "parameters")
+    name = cluster_name or next(iter(roster))
+    if name not in roster:
+        raise EvidenceError("invalid_parameter", "cluster_name must exactly match a cluster_name returned by list_clusters "
+                            "(auto-discovered inventory plus operator entries)." if ROSTER is not None and auto_discovery_enabled()
+                            else "cluster_name must exactly match the fixed operator allowlist.", "parameters")
     defaults = globals().get("CLUSTER_DEFAULTS") or {}
-    config = {**json.loads(json.dumps(obj(defaults, "configuration"))), **obj(APPROVED_CLUSTERS[name], "configuration")}
+    config = {**json.loads(json.dumps(obj(defaults, "configuration"))), **obj(roster[name], "configuration")}
     subscription = guid_setting("subscription_id of " + name, config.get("subscription_id") or SUBSCRIPTION_ID)
     aks_name = config.get("aks_name") or name
     for field, value, maximum in (("name", name, 63), ("aks_name", aks_name, 63), ("resource_group", config.get("resource_group"), 90)):
@@ -3488,6 +3508,105 @@ def validate_config(cluster_name):
             + config["resource_group"] + "/providers/Microsoft.ContainerService/managedClusters/" + aks_name}
 
 
+def auto_discovery_enabled():
+    value = globals().get("AUTO_DISCOVERY", False)
+    if not isinstance(value, bool):
+        raise EvidenceError("configuration_required", "AUTO_DISCOVERY must be True or False.", "configuration")
+    return value
+
+
+def active_roster():
+    return ROSTER if ROSTER is not None else APPROVED_CLUSTERS
+
+
+def discover_clusters():
+    """Observed inventory: every AKS cluster the agent identity can read, from one fixed read-only Resource Graph query."""
+    guid_setting("TENANT_ID", TENANT_ID)
+    guid_setting("MANAGED_IDENTITY_CLIENT_ID", MANAGED_IDENTITY_CLIENT_ID)
+    scope = globals().get("DISCOVERY_SUBSCRIPTION_IDS") or []
+    if not isinstance(scope, list) or len(scope) > 1000:
+        raise EvidenceError("configuration_required", "DISCOVERY_SUBSCRIPTION_IDS must be a list of up to 1000 subscription IDs.", "configuration")
+    subscriptions = [guid_setting("DISCOVERY_SUBSCRIPTION_IDS", value) for value in scope]
+    query = ("resources | where type =~ 'microsoft.containerservice/managedclusters' "
+             "| project id, name, resourceGroup, subscriptionId, tenantId | order by subscriptionId asc, name asc")
+    identity = Identity()
+    try:
+        reader = HttpReader(identity)
+        url = reader.allow(ARM_ORIGIN + "/providers/Microsoft.ResourceGraph/resources?api-version=" + ARG_API, "POST")
+        rows, skip_token = [], None
+        for _ in range(MAX_DISCOVERY_PAGES):
+            options = {"resultFormat": "objectArray", "$top": 1000}
+            if skip_token:
+                options["$skipToken"] = skip_token
+            body = {"query": query, "options": options}
+            if subscriptions:
+                body["subscriptions"] = subscriptions
+            page = reader.request("POST", url, "arm_discovery", body=body)
+            rows.extend(array(page.get("data"), "arm_discovery"))
+            skip_token = page.get("$skipToken")
+            if not isinstance(skip_token, str) or not skip_token or len(rows) > MAX_APPROVED_CLUSTERS:
+                break
+        return rows
+    finally:
+        identity.close()
+
+
+def effective_roster():
+    """Operator entries first (overrides), then every discovered AKS not already listed; bounded and deterministic."""
+    if not auto_discovery_enabled():
+        return APPROVED_CLUSTERS
+    if not isinstance(APPROVED_CLUSTERS, dict):
+        raise EvidenceError("configuration_required", "APPROVED_CLUSTERS must be a dictionary (it can be empty).", "configuration")
+    guid_setting("SUBSCRIPTION_ID", SUBSCRIPTION_ID)
+    roster, known = {}, set()
+    for key, entry in APPROVED_CLUSTERS.items():
+        if isinstance(key, str) and key.startswith("<"):
+            continue
+        entry = obj(entry, "configuration")
+        subscription = str(entry.get("subscription_id") or SUBSCRIPTION_ID).lower()
+        known.add(("/subscriptions/" + subscription + "/resourcegroups/" + str(entry.get("resource_group", ""))
+                   + "/providers/microsoft.containerservice/managedclusters/" + str(entry.get("aks_name") or key)).lower())
+        roster[key] = entry
+    operator_entries, discovered, skipped = len(roster), 0, 0
+    local = re.compile(r"[A-Za-z0-9_.()-]+")
+    for row in discover_clusters():
+        cluster_id = str(row.get("id") or "")
+        parts = cluster_id.split("/")
+        if cluster_id.lower() in known:
+            continue
+        if len(parts) != 9 or parts[1].lower() != "subscriptions" or parts[3].lower() != "resourcegroups" \
+                or parts[6].lower() != "microsoft.containerservice" or parts[7].lower() != "managedclusters":
+            skipped += 1
+            continue
+        subscription, group, name = parts[2].lower(), parts[4], parts[8]
+        tenant = str(row.get("tenantId") or "").lower()
+        if (tenant and tenant != TENANT_ID.lower()) or not re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", subscription) \
+                or not (1 <= len(name) <= 63 and local.fullmatch(name)) or not (1 <= len(group) <= 90 and local.fullmatch(group)):
+            skipped += 1
+            continue
+        key = name if name not in roster else (subscription[:8] + "-" + name)[:63]
+        if key in roster:
+            skipped += 1
+            continue
+        entry = {"resource_group": group, "subscription_id": subscription}
+        if key != name:
+            entry["aks_name"] = name
+        roster[key] = entry
+        known.add(cluster_id.lower())
+        discovered += 1
+    DISCOVERY_INFO.clear()
+    DISCOVERY_INFO.update({"mode": "auto", "source": "azure_resource_graph", "discovered": discovered,
+                           "operator_entries": operator_entries, "skipped": skipped,
+                           "subscription_scope": "configured_list" if globals().get("DISCOVERY_SUBSCRIPTION_IDS") else "all_readable"})
+    if not roster:
+        raise EvidenceError("no_clusters_visible", "Auto-discovery found no AKS cluster the agent identity can read; grant Reader "
+                            "with grant-aks-permissions.ps1 and wait 5-10 minutes.", "arm_discovery")
+    if len(roster) > MAX_APPROVED_CLUSTERS:
+        raise EvidenceError("configuration_required", "Auto-discovery found more than " + str(MAX_APPROVED_CLUSTERS)
+                            + " AKS clusters; limit DISCOVERY_SUBSCRIPTION_IDS.", "configuration")
+    return roster
+
+
 def roster_row(config):
     return {"cluster_id": config["id"], "cluster_name": config["name"],
             "resource_group": config["resource_group"], "environment": config["environment"]}
@@ -3495,11 +3614,11 @@ def roster_row(config):
 
 def selection_configs(cluster_name, cluster_names):
     first = validate_config(cluster_name)
-    configured = [validate_config(name) for name in APPROVED_CLUSTERS]
+    configured = [validate_config(name) for name in active_roster()]
     if len({config["id"].lower() for config in configured}) != len(configured):
         raise EvidenceError("configuration_required", "Two allowlist entries point to the same AKS resource ID.", "configuration")
     names = cluster_names.split(",") if cluster_names else [first["name"]]
-    if len(set(names)) != len(names) or any(name not in APPROVED_CLUSTERS for name in names):
+    if len(set(names)) != len(names) or any(name not in active_roster() for name in names):
         raise EvidenceError("invalid_parameter", "Select distinct exact fixed allowlisted cluster names only.", "parameters")
     by_name = {config["name"]: config for config in configured}
     return [by_name[name] for name in names], configured
@@ -3515,10 +3634,13 @@ def list_clusters_page(configured, limit, offset):
             row["cluster_id"] = config["id"]
     page = rows[offset:offset + limit]
     response = {"status": "ok", "operation": "list_clusters", "fresh_collection": False,
-                "roster_basis": "fixed_operator_configuration_not_observed_inventory",
+                "roster_basis": "observed_inventory_azure_resource_graph_plus_operator_entries" if DISCOVERY_INFO
+                else "fixed_operator_configuration_not_observed_inventory",
                 "total": len(rows), "subscription_count": len({row["subscription_id"] for row in rows}),
                 "offset": offset, "returned": 0, "next_offset": None,
                 "report_batch_limit": MAX_REPORT_CLUSTERS, "available_clusters": page}
+    if DISCOVERY_INFO:
+        response["discovery"] = dict(DISCOVERY_INFO)
     while True:
         response["returned"] = len(response["available_clusters"])
         end = offset + response["returned"]
@@ -3668,7 +3790,7 @@ class HttpReader:
         if parsed.scheme != "https" or (parsed.scheme + "://" + parsed.netloc) != self.origin or parsed.fragment or parsed.username:
             raise EvidenceError("unsafe_endpoint", "Read URL changed the fixed HTTPS origin.", "scope")
         if method not in ("GET", "POST"):
-            raise EvidenceError("unsafe_method", "Only enumerated reads and two fixed read-only POST operations are permitted.", "scope")
+            raise EvidenceError("unsafe_method", "Only enumerated reads and three fixed read-only POST operations are permitted.", "scope")
         self.allowed.add((method, parsed.path))
         return url
 
@@ -3682,6 +3804,7 @@ class HttpReader:
         if method == "POST" and not (
             parsed.path.lower().endswith("/listclusterusercredential")
             or parsed.path.lower().endswith("/providers/microsoft.costmanagement/query")
+            or parsed.path.lower() == "/providers/microsoft.resourcegraph/resources"
         ):
             raise EvidenceError("unsafe_method", "This POST is not an enumerated read-only operation.", source)
         payload = None if body is None else json.dumps(body, allow_nan=False).encode("utf-8")

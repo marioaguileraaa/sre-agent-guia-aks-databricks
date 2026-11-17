@@ -8,6 +8,7 @@
 
 > 🆕 **17/11/2026: [enviar los informes por Outlook o Teams y programarlos](03-envio-outlook-teams-y-tarea-programada/README.md)**
 > (conectores, herramientas de envío en el subagente, tarea programada y prompts listos para Entra, AKS y Databricks).
+> Y la herramienta de AKS **descubre sola los clústeres** según los permisos: [cómo pasar a esa versión](01-aks-well-architected-review/README.md#descubrimiento-automático-novedad-1711).
 
 > **Repositorio temporal para Gestamp.** Se eliminará cuando terminen las pruebas.
 > Los `.py` ya llevan el nombre y el logo de Gestamp; solo tenéis que poner el **Client ID** de vuestro

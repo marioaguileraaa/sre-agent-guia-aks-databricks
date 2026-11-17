@@ -8,6 +8,11 @@
 > ([por qué](#kubernetes-hoy-http-502-de-la-plataforma)) y el portal ha cambiado respecto a octubre
 > (las capturas del portal de esta guía ya son las de hoy).
 
+> 🆕 **17/11/2026 · Descubrimiento automático:** el `.py` nuevo descubre solo los AKS que la identidad del agente
+> puede leer. Para añadir clústeres o una suscripción entera basta con dar permisos con el script: **ya no hay que
+> pegar la lista en el código**. Cómo pasar a esta versión (una vez, 5 minutos):
+> [Descubrimiento automático](#descubrimiento-automático-novedad-1711).
+
 El subagente `aks-waf-live` revisa vuestros clústeres AKS (**hasta 500, repartidos en todas las
 suscripciones del tenant**) y genera un informe con:
 
@@ -29,10 +34,51 @@ No cambia nada: solo lee.
 
 ![Portada del informe](images/aks04-report-00-cover.png)
 
+## Descubrimiento automático (novedad 17/11)
+
+Hasta ahora la herramienta solo revisaba los clústeres de `APPROVED_CLUSTERS`, y cada clúster nuevo obligaba a volver
+a pegar la lista. Con `AUTO_DISCOVERY = True` (viene así), en cada ejecución hace **una consulta de solo lectura a
+Azure Resource Graph** y revisa **todos los AKS que la identidad del agente puede leer**.
+
+| Antes | Ahora |
+|---|---|
+| Script de permisos **y** pegar `APPROVED_CLUSTERS` en el código cada vez que cambia algo | Solo el script de permisos (una vez por suscripción o por Management Group) |
+| La lista la decide quien edita el código | La lista la deciden los permisos (RBAC) de la identidad del agente |
+
+**Pasar a esta versión (una sola vez, 5 minutos):**
+
+1. Guardad vuestro bloque de configuración actual: el `approved-clusters.generated.py` que pegasteis, o copiad del
+   código actual las 5 variables (`SUBSCRIPTION_ID`, `TENANT_ID`, `MANAGED_IDENTITY_CLIENT_ID`, `CLUSTER_DEFAULTS` y
+   `APPROVED_CLUSTERS`).
+2. Herramienta `generate-aks-waf-report` → lápiz → **Code** → `Ctrl+A` y pegad el
+   [`generate-aks-waf-report.py`](generate-aks-waf-report.py) nuevo.
+3. Volved a pegar vuestro bloque encima de la línea `# ====` que cierra **CONFIGURACION**, como en el
+   [paso A2](#paso-a2--pegar-la-configuración-en-el-py-nuevo), con `"kubernetes_enabled": False`. Lo que tengáis en
+   `APPROVED_CLUSTERS` se mantiene como ajustes por clúster (por ejemplo `"environment": "PRODUCTION"`).
+4. **Test** con `operation` = `list_clusters`, `view` = `summary`, `limit` = `25` y `offset` = `0`. La respuesta trae
+   `"discovery": {"mode": "auto", …}` y todos los AKS visibles. Después, **Save**. El skill y el subagente no cambian.
+
+**A partir de ahí, para añadir una suscripción:**
+
+```powershell
+.\grant-aks-permissions.ps1 -IdentityClientId "<client-id>" -SubscriptionId "<id-suscripcion>" -AksRolesAtScope -IncludeCost
+```
+
+Esperad 5–10 minutos (propagación de permisos) y sus AKS aparecen solos en `list_clusters`. El
+`approved-clusters.generated.py` que genera el script ya no hace falta pegarlo.
+
+- **Limitar el alcance (opcional):** `DISCOVERY_SUBSCRIPTION_IDS = ["<sub-1>", "<sub-2>"]`. Vacío = todas las
+  suscripciones que la identidad puede leer.
+- **Volver al modo anterior:** `AUTO_DISCOVERY = False` (solo la lista de `APPROVED_CLUSTERS`).
+- Sigue siendo **solo lectura**. La única novedad es una consulta fija a Azure Resource Graph, la tercera operación
+  POST de lectura permitida junto a las credenciales de usuario del clúster y Cost Management. Máximo 500 clústeres:
+  si hay más, limitad con `DISCOVERY_SUBSCRIPTION_IDS`.
+
 ---
 
 ## Índice
 
+- [Descubrimiento automático (novedad 17/11)](#descubrimiento-automático-novedad-1711)
 - [Cómo funciona la multi-suscripción](#cómo-funciona-la-multi-suscripción)
 - [⭐ Roles y permisos: quién necesita qué (leer antes de empezar)](#-roles-y-permisos-quién-necesita-qué-leer-antes-de-empezar)
 - [A. Si ya lo tenéis desplegado: QUÉ CAMBIAR (7 pasos)](#a-si-ya-lo-tenéis-desplegado-qué-cambiar-7-pasos)
