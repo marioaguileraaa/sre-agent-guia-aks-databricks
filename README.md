@@ -6,6 +6,9 @@
 > Hay que usar (o volver a pegar) los dos `.py` actuales: los anteriores al 16/11 fallan con `identity_mismatch`.
 > La herramienta de Databricks se llama ahora `databricks-dependency-report` y el portal ha cambiado respecto a las capturas.
 
+> 🆕 **17/11/2026: [enviar los informes por Outlook o Teams y programarlos](03-envio-outlook-teams-y-tarea-programada/README.md)**
+> (conectores, herramientas de envío en el subagente, tarea programada y prompts listos para Entra, AKS y Databricks).
+
 > **Repositorio temporal para Gestamp.** Se eliminará cuando terminen las pruebas.
 > Los `.py` ya llevan el nombre y el logo de Gestamp; solo tenéis que poner el **Client ID** de vuestro
 > SRE Agent (el mismo que ya usáis en la herramienta de AKS). Ya no hace falta ningún ZIP: todo está aquí.
